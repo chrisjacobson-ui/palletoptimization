@@ -1,0 +1,1423 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pallet Optimization — Deposco</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        /* ── Reset & Base ───────────────────────────────────────────────────── */
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            font-size: 13px;
+            background: #f0f0f4;
+            color: #2d2d3a;
+            line-height: 1.5;
+            min-height: 100vh;
+        }
+
+        /* ── Top bar ────────────────────────────────────────────────────────── */
+        .topbar {
+            position: sticky; top: 0; z-index: 200;
+            background: #252530;
+            height: 48px;
+            display: flex; align-items: center;
+            padding: 0 1rem;
+            gap: 1rem;
+            box-shadow: 0 2px 4px rgba(0,0,0,.35);
+        }
+        .topbar-hamburger { color: rgba(255,255,255,.6); font-size: 1rem; cursor: pointer; padding: .25rem; }
+        .topbar-brand {
+            display: flex; align-items: center; gap: .5rem;
+            text-decoration: none;
+        }
+        .topbar-brand .logo-mark {
+            width: 26px; height: 26px;
+            background: #f08020;
+            border-radius: 4px;
+            display: flex; align-items: center; justify-content: center;
+            font-weight: 900; font-size: .75rem; color: white; letter-spacing: -.5px;
+        }
+        .topbar-brand .logo-text {
+            font-size: .85rem; font-weight: 700; color: white; letter-spacing: .08em; text-transform: uppercase;
+        }
+        .topbar-search {
+            flex: 1; max-width: 460px;
+            background: rgba(255,255,255,.1); border: 1px solid rgba(255,255,255,.12);
+            border-radius: 5px; padding: .35rem .75rem;
+            color: rgba(255,255,255,.85); font-size: .82rem; outline: none;
+        }
+        .topbar-search::placeholder { color: rgba(255,255,255,.4); }
+        .topbar-search:focus { background: rgba(255,255,255,.15); border-color: rgba(255,255,255,.25); }
+        .topbar-icons { margin-left: auto; display: flex; align-items: center; gap: 1rem; }
+        .topbar-icons i { color: rgba(255,255,255,.6); font-size: .95rem; cursor: pointer; }
+        .topbar-icons i:hover { color: white; }
+
+        /* ── Layout ─────────────────────────────────────────────────────────── */
+        .app-layout { display: flex; min-height: calc(100vh - 48px); }
+
+        /* ── Sidebar ────────────────────────────────────────────────────────── */
+        .sidebar {
+            width: 200px; flex-shrink: 0;
+            background: #2a2a38;
+            padding: .75rem 0;
+            overflow-y: auto;
+        }
+        .sidebar-section-label {
+            font-size: .65rem; font-weight: 700; letter-spacing: .1em; text-transform: uppercase;
+            color: rgba(255,255,255,.3); padding: .75rem 1rem .3rem;
+        }
+        .sidebar-item {
+            display: flex; align-items: center; gap: .6rem;
+            padding: .5rem 1rem;
+            color: rgba(255,255,255,.7);
+            text-decoration: none; font-size: .82rem; font-weight: 500;
+            cursor: pointer; transition: all .12s ease;
+        }
+        .sidebar-item:hover { color: white; background: rgba(255,255,255,.06); }
+        .sidebar-item.active { color: #f08020; }
+        .sidebar-item i { width: 14px; text-align: center; font-size: .82rem; }
+        .sidebar-item .chevron { margin-left: auto; font-size: .65rem; color: rgba(255,255,255,.3); }
+        .sidebar-divider { height: 1px; background: rgba(255,255,255,.07); margin: .4rem 0; }
+
+        /* ── Main content ───────────────────────────────────────────────────── */
+        .main { flex: 1; overflow-x: hidden; }
+
+        /* Page title bar */
+        .page-titlebar {
+            background: white; border-bottom: 1px solid #e0e0ea;
+            padding: .65rem 1.5rem;
+            display: flex; align-items: center; gap: .6rem;
+        }
+        .page-titlebar .back-arrow { color: #2d2d3a; font-size: .85rem; cursor: pointer; }
+        .page-titlebar h1 { font-size: 1rem; font-weight: 600; color: #1e1e2a; }
+        .page-titlebar .emulator-badge {
+            margin-left: auto;
+            display: inline-flex; align-items: center; gap: .4rem;
+            background: #fff3e0; color: #c25f00;
+            padding: .25rem .7rem; border-radius: 20px;
+            font-size: .75rem; font-weight: 600; border: 1px solid #ffd0a0;
+        }
+
+        /* Content area */
+        .content { padding: 1.25rem 1.5rem; }
+
+        /* ── Cards / panels ─────────────────────────────────────────────────── */
+        .panel {
+            background: white; border: 1px solid #e0e0ea; border-radius: 4px;
+            margin-bottom: 1rem;
+        }
+        .panel-header {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: .65rem 1rem; border-bottom: 1px solid #e8e8f0;
+            background: #fafafa;
+        }
+        .panel-header h3 { font-size: .82rem; font-weight: 700; color: #1e1e2a; display: flex; align-items: center; gap: .4rem; }
+        .panel-header h3 i { color: #f08020; }
+        .panel-header .panel-sub { font-size: .72rem; color: #9090a8; margin-left: .5rem; font-weight: 400; }
+        .panel-body { padding: 1rem; }
+
+        /* ── Mode toggle ────────────────────────────────────────────────────── */
+        .mode-toggle-bar {
+            background: white; border: 1px solid #e0e0ea; border-radius: 4px;
+            padding: .65rem 1rem; margin-bottom: 1rem;
+            display: flex; align-items: center; gap: 1.25rem; flex-wrap: wrap;
+        }
+        .mode-toggle-bar > span { font-size: .78rem; font-weight: 700; color: #4a4a5a; text-transform: uppercase; letter-spacing: .06em; }
+        .mode-options { display: flex; gap: .4rem; }
+        .mode-option {
+            display: flex; align-items: center; gap: .35rem;
+            padding: .35rem .9rem; border: 1.5px solid #d0d0de; border-radius: 3px;
+            cursor: pointer; transition: all .12s ease; font-size: .8rem; font-weight: 600;
+            color: #4a4a5a; user-select: none;
+        }
+        .mode-option.selected { border-color: #f08020; background: #fff3e8; color: #c25f00; }
+        .mode-option input { display: none; }
+        .mode-hint { font-size: .75rem; color: #a0a0b8; }
+
+        /* ── Order table ────────────────────────────────────────────────────── */
+        .order-table-wrap { max-height: 320px; overflow-y: auto; }
+        .order-table {
+            width: 100%; border-collapse: collapse; font-size: .78rem;
+        }
+        .order-table thead { position: sticky; top: 0; z-index: 2; }
+        .order-table thead th {
+            background: #f5f5f8; border-bottom: 2px solid #e0e0ea;
+            padding: .45rem .75rem; text-align: left;
+            font-size: .7rem; font-weight: 700; color: #5a5a72;
+            text-transform: uppercase; letter-spacing: .05em;
+            white-space: nowrap; user-select: none; cursor: pointer;
+        }
+        .order-table thead th:hover { color: #2d2d3a; }
+        .order-table thead th .sort-arrow { margin-left: .3rem; color: #b0b0c8; font-size: .65rem; }
+        .order-table thead th.sorted .sort-arrow { color: #f08020; }
+        .order-table thead th:first-child { width: 32px; cursor: default; }
+        .order-table tbody tr {
+            border-bottom: 1px solid #f0f0f5; cursor: pointer;
+            transition: background .07s ease;
+        }
+        .order-table tbody tr:last-child { border-bottom: none; }
+        .order-table tbody tr:hover { background: #fafafa; }
+        .order-table tbody tr.selected { background: #fff8f2; }
+        .order-table td { padding: .45rem .75rem; color: #2d2d3a; vertical-align: middle; }
+        .order-table td:first-child { text-align: center; }
+        .order-table input[type=checkbox] { width: 13px; height: 13px; accent-color: #f08020; cursor: pointer; }
+        .order-num-link { color: #f08020; font-weight: 700; text-decoration: none; }
+        .order-num-link:hover { text-decoration: underline; }
+        .type-badge {
+            display: inline-block; font-size: .68rem; font-weight: 600;
+            padding: .15rem .55rem; border-radius: 12px;
+            background: #e8e8f0; color: #4a4a62; white-space: nowrap;
+        }
+        .status-badge {
+            display: inline-block; font-size: .68rem; font-weight: 700;
+            padding: .15rem .55rem; border-radius: 12px; white-space: nowrap;
+        }
+        .status-new      { background: #d0eeff; color: #1a5a88; }
+        .status-on-trip  { background: #eeeef5; color: #5a5a72; }
+        .order-table-empty { padding: 2.5rem; text-align: center; color: #b0b0c8; font-size: .82rem; }
+        .order-table-empty i { display: block; font-size: 1.4rem; margin-bottom: .4rem; }
+        .panel-footer {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: .5rem 1rem; background: #fafafa; border-top: 1px solid #e8e8f0;
+            font-size: .78rem;
+        }
+        .panel-footer .sel-summary { font-weight: 600; color: #1e1e2a; }
+        .empty-list { padding: 2rem; text-align: center; color: #b0b0c8; font-size: .82rem; }
+        .empty-list i { display: block; font-size: 1.4rem; margin-bottom: .4rem; }
+
+        /* ── Config grid ────────────────────────────────────────────────────── */
+        .config-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; }
+        .config-item { display: flex; flex-direction: column; gap: .3rem; }
+        .config-item label { font-size: .72rem; font-weight: 700; color: #6060788; text-transform: uppercase; letter-spacing: .06em; color: #686880; }
+        .config-item input[type=number], .config-item select {
+            border: 1px solid #d0d0de; border-radius: 3px; padding: .4rem .6rem; font-size: .82rem;
+            color: #2d2d3a; background: white; outline: none;
+        }
+        .config-item input[type=number]:focus, .config-item select:focus { border-color: #f08020; box-shadow: 0 0 0 2px rgba(240,128,32,.15); }
+        .config-note { font-size: .7rem; color: #a0a0b8; }
+        .radio-group { display: flex; gap: .4rem; flex-wrap: wrap; }
+        .radio-option {
+            display: flex; align-items: center; gap: .3rem;
+            padding: .35rem .8rem; border: 1.5px solid #d0d0de; border-radius: 3px;
+            cursor: pointer; font-size: .8rem; font-weight: 600; transition: all .12s ease;
+            color: #4a4a5a; user-select: none;
+        }
+        .radio-option.selected { border-color: #f08020; background: #fff3e8; color: #c25f00; }
+        .radio-option input { display: none; }
+
+        /* ── Buttons ────────────────────────────────────────────────────────── */
+        .btn {
+            display: inline-flex; align-items: center; gap: .4rem;
+            padding: .4rem 1rem; border-radius: 3px; font-weight: 600; font-size: .8rem;
+            cursor: pointer; border: none; transition: all .12s ease; text-decoration: none;
+            white-space: nowrap;
+        }
+        .btn-primary { background: #f08020; color: white; }
+        .btn-primary:hover { background: #d96e18; }
+        .btn-primary:disabled { background: #f5c090; cursor: not-allowed; }
+        .btn-primary-lg { padding: .55rem 1.5rem; font-size: .88rem; }
+        .btn-secondary { background: white; color: #4a4a5a; border: 1px solid #d0d0de; }
+        .btn-secondary:hover { background: #f5f5f8; border-color: #b0b0c0; }
+        .btn-success { background: #28a060; color: white; }
+        .btn-success:hover { background: #1e8050; }
+        .btn-success:disabled { background: #88d0a8; cursor: not-allowed; }
+        .btn-sm { padding: .28rem .7rem; font-size: .75rem; }
+
+        /* ── Action bar ─────────────────────────────────────────────────────── */
+        .action-bar { display: flex; gap: .6rem; margin-bottom: 1rem; align-items: center; flex-wrap: wrap; }
+
+        /* ── Actions dropdown ───────────────────────────────────────────────── */
+        .actions-menu-wrap { position: relative; }
+        .actions-dropdown {
+            display: none; position: absolute; top: 100%; left: 0;
+            background: white; border: 1px solid #d0d0de; border-radius: 3px;
+            box-shadow: 0 4px 12px rgba(0,0,0,.15); z-index: 100;
+            min-width: 220px; margin-top: 3px;
+        }
+        .actions-dropdown.open { display: block; }
+        .actions-dropdown-item {
+            padding: .55rem 1rem; font-size: .8rem; cursor: pointer;
+            color: #2d2d3a; display: flex; align-items: center; gap: .5rem;
+        }
+        .actions-dropdown-item:hover { background: #fafafa; color: #f08020; }
+
+        /* ── Pack type breakdown ────────────────────────────────────────────── */
+        .pack-breakdown {
+            display: flex; align-items: center; gap: .5rem; flex-wrap: wrap;
+            padding: .45rem .75rem; background: #fafafa; border: 1px solid #e8e8f0;
+            border-radius: 3px; margin-bottom: 1rem; font-size: .78rem;
+        }
+        .pack-breakdown-label { font-weight: 700; color: #686880; text-transform: uppercase; font-size: .68rem; letter-spacing: .06em; white-space: nowrap; }
+        .pack-breakdown-item { color: #2d2d3a; padding: .15rem .5rem; background: #eeeef5; border-radius: 10px; font-size: .75rem; }
+
+        /* ── Banners / alerts ───────────────────────────────────────────────── */
+        .banner {
+            display: flex; align-items: flex-start; gap: .65rem;
+            padding: .7rem .9rem; border-radius: 3px; font-size: .8rem; margin-bottom: .75rem;
+            border-left: 3px solid;
+        }
+        .banner i { margin-top: .1rem; flex-shrink: 0; }
+        .banner strong { display: block; font-weight: 700; margin-bottom: .15rem; }
+        .banner-estimate  { background: #fffbeb; border-left-color: #f08020; color: #7a4a10; }
+        .banner-partial   { background: #fff3ee; border-left-color: #e05010; color: #8a3010; }
+        .banner-excluded  { background: #fff0f0; border-left-color: #d03030; color: #8a1818; }
+        .banner-oversized { background: #fff8e0; border-left-color: #c08000; color: #7a5000; }
+
+        /* ── Summary cards ──────────────────────────────────────────────────── */
+        .summary-grid {
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+            gap: .6rem; margin-bottom: 1.25rem;
+        }
+        .summary-card {
+            background: #fafafa; border: 1px solid #e8e8f0; border-radius: 3px;
+            padding: .7rem; text-align: center;
+        }
+        .summary-card .s-val { font-size: 1.6rem; font-weight: 700; color: #f08020; line-height: 1.1; }
+        .summary-card .s-lbl { font-size: .68rem; color: #787890; margin-top: .2rem; text-transform: uppercase; letter-spacing: .04em; }
+
+        /* ── Results panel ──────────────────────────────────────────────────── */
+        .results-header {
+            display: flex; justify-content: space-between; align-items: center;
+            margin-bottom: 1rem;
+        }
+        .results-header h3 { font-size: .88rem; font-weight: 700; color: #1e1e2a; display: flex; align-items: center; gap: .4rem; }
+        .results-header h3 i { color: #28a060; }
+        .results-label { font-size: .78rem; color: #9090a8; font-weight: 400; margin-left: .3rem; }
+
+        /* ── Pallet cards ───────────────────────────────────────────────────── */
+        .pallets-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: .75rem; }
+        .pallet-card {
+            border: 1px solid #e0e0ea; border-radius: 4px; padding: 1rem;
+            background: white; transition: border-color .12s ease;
+        }
+        .pallet-card:hover { border-color: #f08020; }
+        .pallet-card.full-pick { border-color: #88d0a8; background: #f5fdf8; }
+        .pallet-card-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: .65rem; }
+        .pallet-id { font-weight: 700; font-size: .88rem; color: #f08020; }
+        .pallet-type-badge { font-size: .68rem; color: #787890; background: #f0f0f6; padding: .15rem .45rem; border-radius: 10px; }
+        .config-type-badge { font-size: .68rem; font-weight: 700; padding: .15rem .45rem; border-radius: 10px; margin-left: .25rem; }
+        .config-mixed  { background: #f0eaff; color: #6030a0; }
+        .config-single { background: #e0f5e8; color: #1a6a38; }
+        .tp-note { font-size: .68rem; color: #9090a8; margin-left: .25rem; }
+
+        .pallet-metrics { display: grid; grid-template-columns: repeat(3,1fr); gap: .4rem; margin-bottom: .6rem; }
+        .pallet-metric { text-align: center; background: #fafafa; border-radius: 3px; padding: .4rem .3rem; border: 1px solid #eeeef5; }
+        .pallet-metric .m-val { font-size: .9rem; font-weight: 700; color: #f08020; }
+        .pallet-metric .m-lbl { font-size: .62rem; color: #9090a8; margin-top: .1rem; }
+
+        .util-bar { height: 4px; background: #e8e8f0; border-radius: 2px; margin-bottom: .6rem; overflow: hidden; }
+        .util-fill { height: 100%; border-radius: 2px; background: #f08020; }
+        .util-fill.high { background: #d03030; }
+
+        .layers-label { font-size: .65rem; font-weight: 700; color: #9090a8; text-transform: uppercase; letter-spacing: .05em; margin-bottom: .3rem; }
+        .layer-row {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: .25rem .4rem; margin-bottom: .2rem; border-radius: 3px;
+            font-size: .75rem; border: 1px solid #eeeeF5; background: #fafafa;
+        }
+        .layer-row.bottom-layer { border-color: #ffc890; background: #fff8f2; }
+        .layer-num { font-weight: 700; color: #b0b0c8; font-size: .65rem; margin-right: .3rem; }
+        .layer-sku { font-weight: 600; color: #2d2d3a; }
+        .layer-qty { color: #787890; font-size: .72rem; }
+        .haz-badge { font-size: .6rem; font-weight: 700; padding: .08rem .3rem; border-radius: 8px; background: #ffe0e0; color: #c02020; margin-left: .2rem; }
+        .layers-more { font-size: .72rem; color: #f08020; cursor: pointer; margin-top: .15rem; display: block; }
+        .layers-more:hover { text-decoration: underline; }
+
+        .pallet-warning { font-size: .7rem; color: #925010; margin-top: .4rem; background: #fff3e0; padding: .25rem .45rem; border-radius: 3px; border: 1px solid #ffd0a0; }
+
+        /* ── Audit log ──────────────────────────────────────────────────────── */
+        .audit-log { margin-top: 1.25rem; background: #fafafa; border-radius: 3px; padding: 1rem; border: 1px solid #e8e8f0; }
+        .audit-log h4 { font-size: .72rem; font-weight: 700; color: #787890; text-transform: uppercase; letter-spacing: .06em; margin-bottom: .6rem; }
+        .audit-entry { display: flex; gap: .75rem; font-size: .75rem; color: #4a4a5a; padding: .3rem 0; border-bottom: 1px solid #eeeef5; }
+        .audit-entry:last-child { border-bottom: none; }
+        .audit-time { color: #b0b0c8; white-space: nowrap; min-width: 56px; }
+
+        /* ── Modal ──────────────────────────────────────────────────────────── */
+        .modal-overlay {
+            display: none; position: fixed; inset: 0;
+            background: rgba(0,0,0,.45); z-index: 500;
+            align-items: center; justify-content: center;
+        }
+        .modal-overlay.open { display: flex; }
+        .modal {
+            background: white; border-radius: 4px;
+            width: 90%; max-width: 620px; max-height: 90vh;
+            overflow-y: auto; box-shadow: 0 8px 40px rgba(0,0,0,.3);
+            animation: modalIn .18s ease;
+        }
+        @keyframes modalIn { from { transform: translateY(16px); opacity: 0; } to { transform: none; opacity: 1; } }
+        .modal-header {
+            padding: .85rem 1.25rem; border-bottom: 1px solid #e0e0ea;
+            display: flex; justify-content: space-between; align-items: center;
+            background: #fafafa;
+        }
+        .modal-header h2 { font-size: .9rem; font-weight: 700; color: #1e1e2a; display: flex; align-items: center; gap: .4rem; }
+        .modal-header h2 i { color: #f08020; }
+        .modal-close { background: none; border: none; cursor: pointer; color: #9090a8; font-size: 1rem; padding: .15rem; }
+        .modal-close:hover { color: #2d2d3a; }
+        .modal-body { padding: 1.25rem; }
+        .modal-footer { padding: .75rem 1.25rem 1.25rem; display: flex; justify-content: flex-end; gap: .5rem; border-top: 1px solid #e0e0ea; }
+
+        /* Spinner */
+        .spinner-body { display: none; flex-direction: column; align-items: center; justify-content: center; padding: 2.5rem; gap: .75rem; }
+        .spinner-body.active { display: flex; }
+        .dep-spinner {
+            width: 40px; height: 40px; border: 3px solid #e8e8f0; border-top-color: #f08020;
+            border-radius: 50%; animation: spin .8s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* Confirm table */
+        .confirm-table { width: 100%; font-size: .8rem; border: 1px solid #e0e0ea; border-collapse: collapse; margin-bottom: 1rem; border-radius: 3px; overflow: hidden; }
+        .confirm-table td { padding: .45rem .8rem; border-bottom: 1px solid #eeeef5; }
+        .confirm-table tr:last-child td { border-bottom: none; }
+        .confirm-table td:first-child { color: #787890; background: #fafafa; width: 40%; font-weight: 500; }
+        .confirm-table td:last-child { font-weight: 600; color: #1e1e2a; }
+        .confirm-table select { border: 1px solid #d0d0de; border-radius: 3px; padding: .3rem .5rem; font-size: .78rem; background: white; }
+
+        /* Notification */
+        .notification-container { position: fixed; bottom: 1.25rem; right: 1.25rem; z-index: 9999; display: flex; flex-direction: column; gap: .5rem; }
+        .notification {
+            background: white; border-radius: 4px; padding: .75rem 1rem;
+            box-shadow: 0 4px 16px rgba(0,0,0,.15); display: flex; align-items: center; gap: .65rem;
+            max-width: 380px; font-size: .82rem; border: 1px solid #e0e0ea;
+            animation: notifIn .2s ease;
+        }
+        @keyframes notifIn { from { transform: translateY(10px); opacity: 0; } to { transform: none; opacity: 1; } }
+        .notification-success { border-left: 3px solid #28a060; }
+        .notification-success i { color: #28a060; }
+        .notification button { background: none; border: none; cursor: pointer; color: #b0b0c8; margin-left: auto; font-size: .85rem; flex-shrink: 0; }
+
+        /* ── Column config popover ──────────────────────────────────────────── */
+        .col-config-popover {
+            display: none; position: absolute; top: 100%; right: 0;
+            background: white; border: 1px solid #d0d0de; border-radius: 4px;
+            box-shadow: 0 4px 16px rgba(0,0,0,.15); z-index: 200;
+            min-width: 240px; margin-top: 4px; padding: .5rem 0;
+        }
+        .col-config-popover.open { display: block; }
+        .col-config-header {
+            padding: .35rem .85rem .5rem;
+            font-size: .68rem; font-weight: 700; text-transform: uppercase;
+            letter-spacing: .07em; color: #9090a8; border-bottom: 1px solid #eeeef5; margin-bottom: .25rem;
+        }
+        .col-config-row {
+            display: flex; align-items: center; gap: .5rem;
+            padding: .3rem .6rem; font-size: .8rem; color: #2d2d3a;
+        }
+        .col-config-row .col-label { flex: 1; }
+        .col-move-btn {
+            background: none; border: 1px solid #d0d0de; border-radius: 2px;
+            width: 22px; height: 22px; cursor: pointer; color: #787890;
+            display: flex; align-items: center; justify-content: center; font-size: .65rem;
+            flex-shrink: 0;
+        }
+        .col-move-btn:hover:not(:disabled) { background: #f5f5f8; color: #2d2d3a; }
+        .col-move-btn:disabled { opacity: .3; cursor: default; }
+        .col-config-wrap { position: relative; }
+
+        /* Search input in picker */
+        .picker-search {
+            border: 1px solid #d0d0de; border-radius: 3px; padding: .35rem .65rem;
+            font-size: .78rem; color: #2d2d3a; background: #fafafa; width: 180px; outline: none;
+        }
+        .picker-search:focus { border-color: #f08020; background: white; box-shadow: 0 0 0 2px rgba(240,128,32,.12); }
+    </style>
+</head>
+<body>
+
+    <!-- Top bar -->
+    <div class="topbar">
+        <i class="fas fa-bars topbar-hamburger"></i>
+        <a class="topbar-brand" href="#">
+            <div class="logo-mark">D</div>
+            <span class="logo-text">Deposco</span>
+        </a>
+        <input type="text" class="topbar-search" placeholder="Search…">
+        <div class="topbar-icons">
+            <i class="fas fa-th-large"></i>
+            <i class="fas fa-bookmark"></i>
+            <i class="fas fa-bell"></i>
+            <i class="fas fa-question-circle"></i>
+            <i class="fas fa-user-circle"></i>
+        </div>
+    </div>
+
+    <div class="app-layout">
+
+        <!-- Sidebar -->
+        <nav class="sidebar">
+            <div class="sidebar-section-label">Application Menu</div>
+            <a class="sidebar-item" href="#"><i class="fas fa-database"></i> Master Data <i class="fas fa-chevron-right chevron"></i></a>
+            <a class="sidebar-item" href="#"><i class="fas fa-warehouse"></i> Warehouse Setup <i class="fas fa-chevron-right chevron"></i></a>
+            <a class="sidebar-item" href="#"><i class="fas fa-boxes"></i> Inventory Admin <i class="fas fa-chevron-right chevron"></i></a>
+            <div class="sidebar-divider"></div>
+            <a class="sidebar-item" href="#"><i class="fas fa-shopping-cart"></i> Orders <i class="fas fa-chevron-right chevron"></i></a>
+            <a class="sidebar-item active" href="#"><i class="fas fa-layer-group"></i> Order Processing</a>
+            <div style="padding-left:1.6rem;">
+                <a class="sidebar-item" href="#" style="padding:.35rem .75rem;font-size:.78rem;">OFP Setup</a>
+                <a class="sidebar-item active" href="#" style="padding:.35rem .75rem;font-size:.78rem;color:#f08020;">Pallet Optimization</a>
+                <a class="sidebar-item" href="#" style="padding:.35rem .75rem;font-size:.78rem;">OFP Error Notice</a>
+            </div>
+            <div class="sidebar-divider"></div>
+            <a class="sidebar-item" href="#"><i class="fas fa-truck"></i> Distribution <i class="fas fa-chevron-right chevron"></i></a>
+            <a class="sidebar-item" href="#"><i class="fas fa-box"></i> Packing <i class="fas fa-chevron-right chevron"></i></a>
+            <a class="sidebar-item" href="#"><i class="fas fa-shipping-fast"></i> Shipping <i class="fas fa-chevron-right chevron"></i></a>
+            <div class="sidebar-divider"></div>
+            <a class="sidebar-item" href="#"><i class="fas fa-chart-bar"></i> Performance <i class="fas fa-chevron-right chevron"></i></a>
+            <a class="sidebar-item" href="#"><i class="fas fa-cog"></i> Setup <i class="fas fa-chevron-right chevron"></i></a>
+            <a class="sidebar-item" href="#"><i class="fas fa-print"></i> Printing <i class="fas fa-chevron-right chevron"></i></a>
+        </nav>
+
+        <!-- Main -->
+        <div class="main">
+
+            <!-- Page title bar -->
+            <div class="page-titlebar">
+                <i class="fas fa-chevron-left back-arrow"></i>
+                <h1>Pallet Optimization</h1>
+                <span id="emulator-badge" class="emulator-badge" style="display:none;">
+                    <i class="fas fa-flask"></i> Emulator Mode — results not written to any trip
+                </span>
+            </div>
+
+            <div class="content">
+
+                <!-- Mode toggle -->
+                <div class="mode-toggle-bar">
+                    <span>Mode</span>
+                    <div class="mode-options">
+                        <label class="mode-option selected" id="mode-opt-btn" onclick="selectMode('OPTIMIZATION')">
+                            <input type="radio" name="mode" value="OPTIMIZATION" checked>
+                            <i class="fas fa-layer-group"></i> Pallet Optimization
+                        </label>
+                        <label class="mode-option" id="mode-emu-btn" onclick="selectMode('EMULATOR')">
+                            <input type="radio" name="mode" value="EMULATOR">
+                            <i class="fas fa-flask"></i> Emulator
+                        </label>
+                    </div>
+                    <span class="mode-hint" id="mode-hint">Optimization mode: only orders not yet on a trip are shown</span>
+                </div>
+
+                <!-- Order picker -->
+                <div class="panel">
+                    <div class="panel-header">
+                        <div style="display:flex;align-items:center;gap:.75rem;">
+                            <h3><i class="fas fa-list-check"></i> Select Orders</h3>
+                            <div class="actions-menu-wrap">
+                                <button class="btn btn-primary btn-sm" id="run-btn" onclick="toggleActionsMenu(event)" disabled>
+                                    <i class="fas fa-bolt"></i> Actions <i class="fas fa-chevron-down" style="font-size:.65rem;margin-left:.1rem;"></i>
+                                </button>
+                                <div class="actions-dropdown" id="actions-dropdown">
+                                    <div class="actions-dropdown-item" onclick="closeActionsMenu(); openRunModal();">
+                                        <i class="fas fa-layer-group"></i> Run Pallet Optimization
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div style="display:flex;gap:.4rem;align-items:center;">
+                            <button class="btn btn-secondary btn-sm" id="filter-btn" onclick="openFilterModal()">
+                                <i class="fas fa-filter"></i> Filter
+                            </button>
+                            <div class="col-config-wrap">
+                                <button class="btn btn-secondary btn-sm" onclick="toggleColConfig(event)">
+                                    <i class="fas fa-columns"></i> Configure
+                                </button>
+                                <div class="col-config-popover" id="col-config-popover">
+                                    <div class="col-config-header">Column Order</div>
+                                    <div id="col-config-list"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="order-table-wrap">
+                        <table class="order-table" id="order-table">
+                            <thead><tr id="order-table-head"></tr></thead>
+                            <tbody id="order-list"></tbody>
+                        </table>
+                    </div>
+                    <div class="panel-footer">
+                        <span class="sel-summary" id="order-selection-summary">No orders selected</span>
+                    </div>
+                </div>
+
+                <!-- Config panel -->
+                <div class="panel">
+                    <div class="panel-header">
+                        <h3><i class="fas fa-sliders-h"></i> Pallet Parameters <span class="panel-sub">Trading partner config overrides system defaults</span></h3>
+                    </div>
+                    <div class="panel-body">
+                        <div class="config-grid">
+                            <div class="config-item">
+                                <label>Pallet Size</label>
+                                <input type="text" id="pallet-size" value='48" × 40" (GMA Standard)' readonly
+                                       style="background:#f5f5f8;color:#6a6a82;cursor:default;">
+                                <span class="config-note">System default: 48"×40". Override at Trading Partner level.</span>
+                            </div>
+                            <div class="config-item">
+                                <label>Mixed-Item Pallets</label>
+                                <div class="radio-group">
+                                    <label class="radio-option" id="mixed-yes-btn" onclick="selectMixed(true)">
+                                        <input type="radio" name="mixed" value="YES">
+                                        <i class="fas fa-check"></i> Allowed
+                                    </label>
+                                    <label class="radio-option selected" id="mixed-no-btn" onclick="selectMixed(false)">
+                                        <input type="radio" name="mixed" value="NO" checked>
+                                        <i class="fas fa-times"></i> Single-Item Only
+                                    </label>
+                                </div>
+                                <span class="config-note">System default: Single-Item Only</span>
+                            </div>
+                            <div class="config-item">
+                                <label>Max Stack Height (in)</label>
+                                <input type="number" id="max-height" value="60" min="1" max="120">
+                                <span class="config-note">System default: 60". From top of pallet deck — does not include pallet tare height (typically ~5.5" for GMA). Set this value after subtracting the physical pallet height.</span>
+                            </div>
+                            <div class="config-item">
+                                <label>Max Pallet Weight (lbs)</label>
+                                <input type="number" id="max-weight" value="2500" min="1">
+                                <span class="config-note">System default: 2,500 lbs gross (incl. tare).</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+
+                <!-- Results -->
+                <div id="results-section" style="display:none;">
+
+                    <!-- Estimate banner -->
+                    <div class="banner banner-estimate" id="estimate-banner">
+                        <i class="fas fa-info-circle"></i>
+                        <div>
+                            <strong>Estimate only — based on simulated soft allocation.</strong>
+                            Inventory availability may change before order release. Results do not generate pick tasks or enable SSCC label printing. The authoritative run happens through OFP at order release.
+                        </div>
+                    </div>
+
+                    <!-- Partial allocation warning -->
+                    <div class="banner banner-partial" id="partial-banner" style="display:none;">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <div>
+                            <strong>Partial allocation — not all inventory was available.</strong>
+                            Results reflect only the allocated quantities. You can still commit; results will be updated at order release.
+                        </div>
+                    </div>
+
+                    <!-- Excluded items warning -->
+                    <div class="banner banner-excluded" id="excluded-warning" style="display:none;">
+                        <i class="fas fa-exclamation-circle"></i>
+                        <div>
+                            <strong>Warning — the following items were excluded from pallet builds due to missing pack dimensions (length, width, height, or weight not on file):</strong>
+                            <span id="excluded-list"></span>. These items will not appear in any pallet build or layer assignment. Update the item master with pack dimensions and re-run to include them.
+                        </div>
+                    </div>
+
+                    <!-- Oversized items warning -->
+                    <div class="banner banner-oversized" id="oversized-warning" style="display:none;">
+                        <i class="fas fa-expand-arrows-alt"></i>
+                        <div>
+                            <strong>Warning — the following items exceed the pallet footprint (48"×40") in both orientations and cannot be palletized:</strong>
+                            <span id="oversized-list"></span>. These items are excluded from all pallet builds. Review the pack dimensions on the item master or coordinate a special handling arrangement for this shipment.
+                        </div>
+                    </div>
+
+                    <div class="panel">
+                        <div class="panel-header">
+                            <h3>
+                                <i class="fas fa-check-circle" style="color:#28a060;"></i>
+                                Optimization Results
+                                <span class="results-label" id="results-label"></span>
+                            </h3>
+                            <div style="display:flex;gap:.4rem;">
+                                <button class="btn btn-secondary btn-sm" onclick="clearResults()"><i class="fas fa-times"></i> Clear</button>
+                                <button class="btn btn-secondary btn-sm" onclick="exportCsv()"><i class="fas fa-download"></i> Export CSV</button>
+                                <button class="btn btn-success btn-sm" id="commit-btn" onclick="commitResults()">
+                                    <i class="fas fa-check"></i> Commit &amp; Create Trip
+                                </button>
+                            </div>
+                        </div>
+                        <div class="panel-body">
+                            <div class="summary-grid" id="summary-cards"></div>
+                            <div class="pack-breakdown" id="pack-breakdown" style="display:none;">
+                                <span class="pack-breakdown-label">Packs by type:</span>
+                                <span id="pack-breakdown-items"></span>
+                            </div>
+                            <div id="order-summary-section" style="display:none;margin-bottom:1rem;">
+                                <div style="font-size:.65rem;font-weight:700;color:#9090a8;text-transform:uppercase;letter-spacing:.05em;margin-bottom:.35rem;">
+                                    <i class="fas fa-list" style="margin-right:.25rem;"></i>Per-Order Summary
+                                </div>
+                                <table style="width:100%;border-collapse:collapse;font-size:.78rem;">
+                                    <thead>
+                                        <tr style="background:#f5f5f8;border-bottom:2px solid #e0e0ea;">
+                                            <th style="padding:.35rem .65rem;text-align:left;font-size:.68rem;font-weight:700;color:#5a5a72;text-transform:uppercase;letter-spacing:.04em;">Order</th>
+                                            <th style="padding:.35rem .65rem;text-align:left;font-size:.68rem;font-weight:700;color:#5a5a72;text-transform:uppercase;letter-spacing:.04em;">Customer</th>
+                                            <th style="padding:.35rem .65rem;text-align:left;font-size:.68rem;font-weight:700;color:#5a5a72;text-transform:uppercase;letter-spacing:.04em;">Trading Partner</th>
+                                            <th style="padding:.35rem .65rem;text-align:right;font-size:.68rem;font-weight:700;color:#5a5a72;text-transform:uppercase;letter-spacing:.04em;">Pallet Builds</th>
+                                            <th style="padding:.35rem .65rem;text-align:right;font-size:.68rem;font-weight:700;color:#5a5a72;text-transform:uppercase;letter-spacing:.04em;">Total Packs</th>
+                                            <th style="padding:.35rem .65rem;text-align:right;font-size:.68rem;font-weight:700;color:#5a5a72;text-transform:uppercase;letter-spacing:.04em;">Haz Packs</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="order-summary-body"></tbody>
+                                </table>
+                            </div>
+                            <div class="pallets-grid" id="pallets-grid"></div>
+                            <div class="audit-log">
+                                <h4><i class="fas fa-history" style="margin-right:.3rem;"></i> Audit Trail</h4>
+                                <div id="audit-entries"><div style="font-size:.75rem;color:#b0b0c8;">No events yet.</div></div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filter Modal -->
+    <div class="modal-overlay" id="filter-modal" onclick="handleFilterOverlayClick(event)">
+        <div class="modal" style="max-width:420px;">
+            <div class="modal-header">
+                <h2><i class="fas fa-filter"></i> Filter Orders</h2>
+                <button class="modal-close" onclick="closeFilterModal()"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="modal-body" style="padding:1rem 1.25rem;">
+                <div class="config-item" style="margin-bottom:.25rem;">
+                    <label>Search</label>
+                    <input type="text" class="picker-search" id="order-search"
+                           placeholder="Order number, customer, trading partner…"
+                           oninput="applyFilter()" style="width:100%;max-width:none;"
+                           autocomplete="off">
+                </div>
+            </div>
+            <div class="modal-footer" style="justify-content:space-between;">
+                <button class="btn btn-secondary btn-sm" onclick="clearFilter()"><i class="fas fa-times"></i> Clear</button>
+                <button class="btn btn-primary btn-sm" onclick="closeFilterModal()">Done</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Run Modal -->
+    <div class="modal-overlay" id="run-modal">
+        <div class="modal">
+            <div class="modal-header">
+                <h2><i class="fas fa-layer-group"></i> Run Pallet Optimization</h2>
+                <button class="modal-close" onclick="closeRunModal()"><i class="fas fa-times"></i></button>
+            </div>
+
+            <!-- Step 1: Confirm -->
+            <div id="modal-step-1" class="modal-body">
+                <p style="margin-bottom:1rem;color:#4a4a5a;font-size:.82rem;">
+                    Confirm the details below, then click <strong>Run</strong> to calculate pallet assignments.
+                    <span id="overwrite-note" style="display:none;color:#c03030;font-weight:600;"> Existing results will be overwritten.</span>
+                </p>
+                <table class="confirm-table">
+                    <tr><td>Facility</td><td>Warehouse A — Atlanta, GA</td></tr>
+                    <tr><td>Selected Orders</td><td id="confirm-orders"></td></tr>
+                    <tr><td>Total Units</td><td id="confirm-items"></td></tr>
+                    <tr><td>Pallet Type</td><td>48×40 GMA Standard</td></tr>
+                    <tr><td>Max Stack Height</td><td id="confirm-height"></td></tr>
+                    <tr><td>Max Pallet Weight</td><td id="confirm-weight"></td></tr>
+                    <tr><td>Mixed-Item Pallets</td><td id="confirm-mixed"></td></tr>
+                    <tr id="alloc-row">
+                        <td>Container Allocation Method</td>
+                        <td>
+                            <select id="alloc-priority">
+                                <option value="CONTAINER_DESC_BREAK" selected>Container Descending (Break)</option>
+                                <option value="CONTAINER_DESC_NOBREAK">Container Descending (Don't Break)</option>
+                                <option value="CONTAINER_ASC_BREAK">Container Ascending (Break)</option>
+                                <option value="CONTAINER_ASC_NOBREAK">Container Ascending (Don't Break)</option>
+                            </select>
+                        </td>
+                    </tr>
+                </table>
+                <div id="missing-dims-note" class="banner banner-excluded" style="display:none;">
+                    <i class="fas fa-exclamation-circle"></i>
+                    <div><strong>Warning — items missing pack dimensions will be excluded from pallet builds:</strong><span id="missing-dims-text"></span>. These items will not appear in any layer assignment. Update the item master and re-run to include them.</div>
+                </div>
+                <div id="oversized-dims-note" class="banner banner-oversized" style="display:none;">
+                    <i class="fas fa-expand-arrows-alt"></i>
+                    <div><strong>Warning — items exceed the pallet footprint (48"×40") and will be excluded from pallet builds:</strong><span id="oversized-dims-text"></span>. These items cannot fit on a standard pallet in any orientation. Review the pack dimensions or arrange special handling.</div>
+                </div>
+            </div>
+
+            <!-- Step 2: Processing -->
+            <div id="modal-step-2" class="spinner-body">
+                <div class="dep-spinner"></div>
+                <p style="color:#4a4a5a;font-size:.85rem;font-weight:600;">Running Pallet Cubing…</p>
+                <p style="color:#b0b0c8;font-size:.75rem;" id="loading-status">Validating items…</p>
+                <button class="btn btn-secondary btn-sm" style="margin-top:.5rem;" onclick="cancelOptimization()">
+                    <i class="fas fa-times"></i> Cancel
+                </button>
+            </div>
+
+            <!-- Step 3: Preview -->
+            <div id="modal-step-3" class="modal-body" style="display:none;">
+                <div class="banner banner-estimate" style="margin-bottom:1rem;">
+                    <i class="fas fa-check-circle" style="color:#28a060;"></i>
+                    <div>
+                        <strong>Pallet Cubing complete</strong>
+                        Review the summary below. Commit to lock in these results, or view full results first.
+                    </div>
+                </div>
+                <div class="summary-grid" id="modal-summary"></div>
+                <div id="modal-excluded" class="banner banner-excluded" style="display:none;">
+                    <i class="fas fa-exclamation-circle"></i>
+                    <div><strong>Warning — items excluded from pallet builds (missing pack dimensions):</strong> <span id="modal-excluded-msg"></span>. These items are not included in any layer assignment. Update the item master and re-run to include them.</div>
+                </div>
+                <div id="modal-oversized" class="banner banner-oversized" style="display:none;">
+                    <i class="fas fa-expand-arrows-alt"></i>
+                    <div><strong>Warning — items exceed the pallet footprint and cannot be palletized:</strong> <span id="modal-oversized-msg"></span>. These items are excluded from all pallet builds. Review the pack dimensions or arrange special handling.</div>
+                </div>
+            </div>
+
+            <div class="modal-footer">
+                <button class="btn btn-secondary" id="modal-cancel-btn" onclick="closeRunModal()">Cancel</button>
+                <button class="btn btn-primary" id="modal-run-btn" onclick="executeOptimization()">
+                    <i class="fas fa-play"></i> Run
+                </button>
+                <button class="btn btn-success" id="modal-commit-btn" style="display:none;" onclick="commitFromModal()">
+                    <i class="fas fa-check"></i> Commit &amp; Create Trip
+                </button>
+                <button class="btn btn-secondary" id="modal-view-btn" style="display:none;" onclick="closeRunModal()">
+                    <i class="fas fa-eye"></i> View Full Results
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="notification-container" id="notif-container"></div>
+
+    <script>
+    // ── State ──────────────────────────────────────────────────────────────────
+    const state = {
+        mode: 'OPTIMIZATION',
+        selectedOrderIds: new Set(),
+        items: [],
+        allowMixed: false,
+        result: null,
+        auditLog: []
+    };
+
+    // ── Sample orders ──────────────────────────────────────────────────────────
+    const ORDERS = [
+        {
+            id: 'ORD-1001', customer: 'ACME Corporation', tp: 'ACME',
+            skuCount: 3, caseCount: 150, onTrip: null,
+            items: [
+                { sku:'SKU-1001', description:'Widget Box A',  tp:'ACME', packLevel:'Case', lengthIn:12, widthIn:10, heightIn:8,  weightLbs:15, quantity:80,  hazardous:false },
+                { sku:'SKU-1002', description:'Widget Box B',  tp:'ACME', packLevel:'Case', lengthIn:14, widthIn:12, heightIn:10, weightLbs:22, quantity:40,  hazardous:false },
+                { sku:'SKU-1005', description:'Promo Pack (dims not on file)', tp:'ACME', packLevel:'Case', lengthIn:0, widthIn:0, heightIn:0, weightLbs:0, quantity:30, hazardous:false },
+            ]
+        },
+        {
+            id: 'ORD-1002', customer: 'ACME Corporation', tp: 'ACME',
+            skuCount: 1, caseCount: 12, onTrip: null,
+            items: [
+                { sku:'SKU-HAZ1', description:'Chemical Drum', tp:'ACME', packLevel:'Drum', lengthIn:18, widthIn:18, heightIn:24, weightLbs:55, quantity:12, hazardous:true },
+            ]
+        },
+        {
+            id: 'ORD-2001', customer: 'Global Industries', tp: 'GLOBAL',
+            skuCount: 2, caseCount: 260, onTrip: null,
+            items: [
+                { sku:'SKU-2001', description:'Apparel Box S', tp:'GLOBAL', packLevel:'Case', lengthIn:10, widthIn:8,  heightIn:6,  weightLbs:8,  quantity:200, hazardous:false },
+                { sku:'SKU-2002', description:'Apparel Box L', tp:'GLOBAL', packLevel:'Case', lengthIn:16, widthIn:14, heightIn:12, weightLbs:18, quantity:60,  hazardous:false },
+            ]
+        },
+        {
+            id: 'ORD-3001', customer: 'Tech Solutions Ltd', tp: 'TECH',
+            skuCount: 3, caseCount: 195, onTrip: null,
+            items: [
+                { sku:'SKU-3001', description:'Food Pack A', tp:'TECH', packLevel:'Case', lengthIn:12, widthIn:12, heightIn:10, weightLbs:12, quantity:120, hazardous:false },
+                { sku:'SKU-3002', description:'Food Pack B', tp:'TECH', packLevel:'Case', lengthIn:14, widthIn:14, heightIn:12, weightLbs:20, quantity:60,  hazardous:false },
+                { sku:'SKU-3004', description:'Industrial Crate (oversize)', tp:'TECH', packLevel:'Crate', lengthIn:52, widthIn:44, heightIn:36, weightLbs:320, quantity:15, hazardous:false },
+            ]
+        },
+        {
+            id: 'ORD-3002', customer: 'Tech Solutions Ltd', tp: 'TECH',
+            skuCount: 1, caseCount: 40, onTrip: null,
+            items: [
+                { sku:'SKU-3003', description:'Cleaning Supply', tp:'TECH', packLevel:'Case', lengthIn:10, widthIn:10, heightIn:8, weightLbs:9, quantity:40, hazardous:true },
+            ]
+        },
+        {
+            id: 'ORD-4001', customer: 'ACME Corporation', tp: 'ACME',
+            skuCount: 2, caseCount: 55, onTrip: 'TRP-2024-004',
+            items: [
+                { sku:'SKU-1003', description:'Widget Box C', tp:'ACME', packLevel:'Case', lengthIn:10, widthIn:10, heightIn:8,  weightLbs:12, quantity:30, hazardous:false },
+                { sku:'SKU-1004', description:'Widget Box D', tp:'ACME', packLevel:'Case', lengthIn:12, widthIn:10, heightIn:9,  weightLbs:16, quantity:25, hazardous:false },
+            ]
+        },
+        {
+            id: 'ORD-4002', customer: 'Global Industries', tp: 'GLOBAL',
+            skuCount: 1, caseCount: 30, onTrip: 'TRP-2024-001',
+            items: [
+                { sku:'SKU-2003', description:'Apparel Hanger Pack', tp:'GLOBAL', packLevel:'Each', lengthIn:0, widthIn:0, heightIn:0, weightLbs:0, quantity:30, hazardous:false },
+            ]
+        },
+    ];
+
+    // ── Mode ───────────────────────────────────────────────────────────────────
+    function selectMode(mode) {
+        state.mode = mode;
+        state.selectedOrderIds.clear();
+        state.items = [];
+        state.result = null;
+        const srch = document.getElementById('order-search');
+        if (srch) srch.value = '';
+        updateFilterButton();
+        document.getElementById('mode-opt-btn').classList.toggle('selected', mode === 'OPTIMIZATION');
+        document.getElementById('mode-emu-btn').classList.toggle('selected', mode === 'EMULATOR');
+        document.getElementById('emulator-badge').style.display = mode === 'EMULATOR' ? 'inline-flex' : 'none';
+        document.getElementById('mode-hint').textContent = mode === 'OPTIMIZATION'
+            ? 'Optimization mode: only orders not yet on a trip are shown'
+            : 'Emulator mode: all orders shown — skips container allocation, results not written to any trip';
+        renderOrderList();
+        updateRunButton();
+        hideResults();
+    }
+
+    // ── Column config ──────────────────────────────────────────────────────────
+    const ALL_COLS = [
+        { key: 'type',     label: 'Type' },
+        { key: 'id',       label: 'Number' },
+        { key: 'customer', label: 'Customer' },
+        { key: 'tp',       label: 'Trading Partner' },
+        { key: 'status',   label: 'Status' },
+    ];
+    let colOrder = ALL_COLS.map(c => c.key);
+
+    function toggleColConfig(e) {
+        e.stopPropagation();
+        const pop = document.getElementById('col-config-popover');
+        pop.classList.toggle('open');
+        if (pop.classList.contains('open')) renderColConfigList();
+    }
+    function closeColConfig() { document.getElementById('col-config-popover').classList.remove('open'); }
+    document.addEventListener('click', () => closeColConfig());
+
+    function renderColConfigList() {
+        document.getElementById('col-config-list').innerHTML = colOrder.map((key, i) => {
+            const col = ALL_COLS.find(c => c.key === key);
+            return `<div class="col-config-row">
+                <span class="col-label">${col.label}</span>
+                <button class="col-move-btn" onclick="moveCol(${i}, -1)" ${i===0 ? 'disabled' : ''} title="Move up"><i class="fas fa-chevron-up"></i></button>
+                <button class="col-move-btn" onclick="moveCol(${i}, 1)" ${i===colOrder.length-1 ? 'disabled' : ''} title="Move down"><i class="fas fa-chevron-down"></i></button>
+            </div>`;
+        }).join('');
+    }
+
+    function moveCol(idx, dir) {
+        const swapIdx = idx + dir;
+        if (swapIdx < 0 || swapIdx >= colOrder.length) return;
+        [colOrder[idx], colOrder[swapIdx]] = [colOrder[swapIdx], colOrder[idx]];
+        renderColConfigList();
+        renderOrderTableHead();
+        renderOrderList();
+    }
+
+    function renderOrderTableHead() {
+        document.getElementById('order-table-head').innerHTML =
+            `<th><input type="checkbox" id="select-all-cb" onclick="toggleSelectAll(this)" title="Select all"></th>` +
+            colOrder.map(key => {
+                const col = ALL_COLS.find(c => c.key === key);
+                const sorted = sortCol === key;
+                return `<th onclick="sortOrders('${key}')" class="${sorted ? 'sorted' : ''}">
+                    ${col.label} <span class="sort-arrow"><i class="fas fa-sort${sorted ? (sortDir===1 ? '-down' : '-up') : ''}"></i></span>
+                </th>`;
+            }).join('');
+    }
+
+    // ── Order picker ───────────────────────────────────────────────────────────
+    let sortCol = 'id', sortDir = 1;
+
+    function visibleOrders() {
+        const q = (document.getElementById('order-search')?.value || '').toLowerCase();
+        let rows = ORDERS.filter(o => {
+            if (state.mode === 'OPTIMIZATION' && o.onTrip !== null) return false;
+            if (q && !o.id.toLowerCase().includes(q) && !o.customer.toLowerCase().includes(q) && !o.tp.toLowerCase().includes(q)) return false;
+            return true;
+        });
+        rows.sort((a, b) => {
+            if (sortCol === 'skuCount')  return (a.skuCount  - b.skuCount)  * sortDir;
+            if (sortCol === 'caseCount') return (a.caseCount - b.caseCount) * sortDir;
+            const av = sortCol === 'status' ? (a.onTrip||'') : sortCol === 'customer' ? a.customer : sortCol === 'tp' ? a.tp : a.id;
+            const bv = sortCol === 'status' ? (b.onTrip||'') : sortCol === 'customer' ? b.customer : sortCol === 'tp' ? b.tp : b.id;
+            return av < bv ? -sortDir : av > bv ? sortDir : 0;
+        });
+        return rows;
+    }
+
+    function sortOrders(col) {
+        sortDir = sortCol === col ? sortDir * -1 : 1;
+        sortCol = col;
+        renderOrderTableHead();
+        renderOrderList();
+    }
+
+    function cellForCol(key, o) {
+        const statusBadge = o.onTrip
+            ? `<span class="status-badge status-on-trip">Released</span>`
+            : `<span class="status-badge status-new">New</span>`;
+        switch (key) {
+            case 'type':     return `<td><span class="type-badge">Sales Order</span></td>`;
+            case 'id':       return `<td><a class="order-num-link" href="#" onclick="event.preventDefault()">${o.id}</a></td>`;
+            case 'customer': return `<td>${o.customer}</td>`;
+            case 'tp':       return `<td>${o.tp}</td>`;
+            case 'status':   return `<td>${statusBadge}</td>`;
+            default:         return `<td></td>`;
+        }
+    }
+
+    function renderOrderList() {
+        const tbody = document.getElementById('order-list');
+        const orders = visibleOrders();
+        if (orders.length === 0) {
+            const span = colOrder.length + 1;
+            tbody.innerHTML = `<tr><td colspan="${span}"><div class="order-table-empty"><i class="fas fa-inbox"></i>${state.mode === 'OPTIMIZATION' ? 'No orders available — all orders are already on a trip' : 'No orders found'}</div></td></tr>`;
+            updateSelectionSummary(); updateSelectAllCb(); return;
+        }
+        tbody.innerHTML = orders.map(o => {
+            const sel = state.selectedOrderIds.has(o.id);
+            const cells = colOrder.map(key => cellForCol(key, o)).join('');
+            return `<tr class="${sel ? 'selected' : ''}" onclick="toggleOrder('${o.id}', this)">
+                <td onclick="event.stopPropagation()"><input type="checkbox" ${sel ? 'checked' : ''} onclick="toggleOrder('${o.id}',this.closest('tr'))"></td>
+                ${cells}
+            </tr>`;
+        }).join('');
+        updateSelectionSummary(); updateSelectAllCb();
+    }
+
+    function toggleOrder(orderId, el) {
+        const cb = el.querySelector('input[type=checkbox]');
+        if (state.selectedOrderIds.has(orderId)) {
+            state.selectedOrderIds.delete(orderId); el.classList.remove('selected'); if (cb) cb.checked = false;
+        } else {
+            state.selectedOrderIds.add(orderId); el.classList.add('selected'); if (cb) cb.checked = true;
+        }
+        rebuildItemsFromOrders(); updateSelectionSummary(); updateRunButton(); updateSelectAllCb();
+    }
+
+    function toggleSelectAll(cb) {
+        if (cb.checked) { visibleOrders().forEach(o => state.selectedOrderIds.add(o.id)); }
+        else { visibleOrders().forEach(o => state.selectedOrderIds.delete(o.id)); }
+        rebuildItemsFromOrders(); renderOrderList(); updateRunButton();
+    }
+
+    function updateSelectAllCb() {
+        const cb = document.getElementById('select-all-cb'); if (!cb) return;
+        const vis = visibleOrders();
+        const allSel = vis.length > 0 && vis.every(o => state.selectedOrderIds.has(o.id));
+        cb.checked = allSel;
+        cb.indeterminate = !allSel && vis.some(o => state.selectedOrderIds.has(o.id));
+    }
+
+    function selectAllOrders() { visibleOrders().forEach(o => state.selectedOrderIds.add(o.id)); rebuildItemsFromOrders(); renderOrderList(); updateRunButton(); }
+    function clearOrderSelection() { state.selectedOrderIds.clear(); rebuildItemsFromOrders(); renderOrderList(); updateRunButton(); }
+    function updateSelectionSummary() {
+        const sel = ORDERS.filter(o => state.selectedOrderIds.has(o.id));
+        const cases = sel.reduce((s,o)=>s+o.caseCount,0);
+        document.getElementById('order-selection-summary').textContent = sel.length === 0
+            ? 'No orders selected'
+            : `${sel.length} order${sel.length!==1?'s':''} selected — ${cases} cases total`;
+    }
+    function rebuildItemsFromOrders() {
+        state.items = [];
+        ORDERS.filter(o => state.selectedOrderIds.has(o.id)).forEach(o => o.items.forEach(item => state.items.push({...item, orderId:o.id})));
+    }
+    function hasDims(item) { return item.lengthIn>0 && item.widthIn>0 && item.heightIn>0 && item.weightLbs>0; }
+    function isOversized(item) {
+        if (!hasDims(item)) return false;
+        const o1 = Math.floor(48/item.lengthIn)*Math.floor(40/item.widthIn);
+        const o2 = Math.floor(48/item.widthIn)*Math.floor(40/item.lengthIn);
+        return o1 === 0 && o2 === 0;
+    }
+    function selectMixed(allowed) {
+        state.allowMixed = allowed;
+        document.getElementById('mixed-yes-btn').classList.toggle('selected', allowed);
+        document.getElementById('mixed-no-btn').classList.toggle('selected', !allowed);
+    }
+    function updateRunButton() {
+        const btn = document.getElementById('run-btn');
+        btn.disabled = state.selectedOrderIds.size === 0;
+    }
+
+    // ── Filter modal ───────────────────────────────────────────────────────────
+    function openFilterModal() {
+        document.getElementById('filter-modal').classList.add('open');
+        setTimeout(() => document.getElementById('order-search').focus(), 50);
+    }
+    function closeFilterModal() {
+        document.getElementById('filter-modal').classList.remove('open');
+        updateFilterButton();
+    }
+    function handleFilterOverlayClick(e) {
+        if (e.target === document.getElementById('filter-modal')) closeFilterModal();
+    }
+    function applyFilter() { renderOrderList(); }
+    function clearFilter() {
+        document.getElementById('order-search').value = '';
+        renderOrderList();
+        updateFilterButton();
+    }
+    function updateFilterButton() {
+        const q = (document.getElementById('order-search')?.value || '').trim();
+        const btn = document.getElementById('filter-btn');
+        if (q) {
+            btn.classList.remove('btn-secondary');
+            btn.classList.add('btn-primary');
+            btn.innerHTML = `<i class="fas fa-filter"></i> Filter <span style="background:rgba(255,255,255,.3);border-radius:8px;padding:.05rem .4rem;font-size:.7rem;margin-left:.2rem;">1</span>`;
+        } else {
+            btn.classList.remove('btn-primary');
+            btn.classList.add('btn-secondary');
+            btn.innerHTML = `<i class="fas fa-filter"></i> Filter`;
+        }
+    }
+
+    // ── Actions menu ───────────────────────────────────────────────────────────
+    function toggleActionsMenu(e) {
+        e.stopPropagation();
+        document.getElementById('actions-dropdown').classList.toggle('open');
+    }
+    function closeActionsMenu() { document.getElementById('actions-dropdown').classList.remove('open'); }
+    document.addEventListener('click', () => closeActionsMenu());
+
+    // ── Run modal ──────────────────────────────────────────────────────────────
+    function openRunModal() {
+        if (state.selectedOrderIds.size === 0) return;
+        rebuildItemsFromOrders();
+        const usable  = state.items.filter(hasDims);
+        const missing = state.items.filter(i => !hasDims(i));
+        const selOrders = ORDERS.filter(o => state.selectedOrderIds.has(o.id));
+        document.getElementById('confirm-orders').textContent   = selOrders.map(o=>o.id).join(', ');
+        document.getElementById('confirm-items').textContent    = `${usable.length} SKUs, ${usable.reduce((s,i)=>s+i.quantity,0)} units`;
+        document.getElementById('confirm-height').textContent   = document.getElementById('max-height').value + '"';
+        document.getElementById('confirm-weight').textContent   = parseInt(document.getElementById('max-weight').value).toLocaleString() + ' lbs gross';
+        document.getElementById('confirm-mixed').textContent    = state.allowMixed ? 'Allowed' : 'Single-item only';
+        document.getElementById('alloc-row').style.display      = state.mode === 'EMULATOR' ? 'none' : '';
+        document.getElementById('overwrite-note').style.display = state.result ? 'inline' : 'none';
+        const mn = document.getElementById('missing-dims-note');
+        if (missing.length > 0) {
+            document.getElementById('missing-dims-text').textContent = ` — ${missing.length} item(s): ${missing.map(i=>i.sku||'(no SKU)').join(', ')}`;
+            mn.style.display = 'flex';
+        } else { mn.style.display = 'none'; }
+        const oversizedItems = state.items.filter(isOversized);
+        const on = document.getElementById('oversized-dims-note');
+        if (oversizedItems.length > 0) {
+            document.getElementById('oversized-dims-text').textContent = ` — ${oversizedItems.length} item(s): ${oversizedItems.map(i=>i.sku||'(no SKU)').join(', ')}`;
+            on.style.display = 'flex';
+        } else { on.style.display = 'none'; }
+        showModalStep(1);
+        document.getElementById('run-modal').classList.add('open');
+    }
+
+    function closeRunModal() {
+        document.getElementById('run-modal').classList.remove('open');
+        if (state.result) renderResults();
+        showModalStep(1);
+    }
+
+    function showModalStep(step) {
+        document.getElementById('modal-step-1').style.display = step===1 ? 'block' : 'none';
+        document.getElementById('modal-step-2').classList.toggle('active', step===2);
+        document.getElementById('modal-step-3').style.display = step===3 ? 'block' : 'none';
+        document.getElementById('modal-run-btn').style.display    = step===1 ? 'inline-flex' : 'none';
+        document.getElementById('modal-cancel-btn').style.display = step===2 ? 'none' : 'inline-flex';
+        document.getElementById('modal-cancel-btn').textContent   = step===3 ? 'Close' : 'Cancel';
+        document.getElementById('modal-commit-btn').style.display = (step===3 && state.mode!=='EMULATOR') ? 'inline-flex' : 'none';
+        document.getElementById('modal-view-btn').style.display   = step===3 ? 'inline-flex' : 'none';
+    }
+
+    let _optimizationTimer = null;
+    let _optimizationInterval = null;
+    let _optimizationCancelled = false;
+
+    function executeOptimization() {
+        _optimizationCancelled = false;
+        showModalStep(2);
+        const statuses = ['Validating items…','Running full pallet pass (container allocation)…','Calculating layer capacities…','Stacking layers onto pallets…','Finalizing results…'];
+        let si = 0;
+        const statusEl = document.getElementById('loading-status');
+        _optimizationInterval = setInterval(() => { if (si < statuses.length) statusEl.textContent = statuses[si++]; }, 440);
+        _optimizationTimer = setTimeout(() => {
+            clearInterval(_optimizationInterval);
+            if (_optimizationCancelled) return;
+            state.result = runPalletCubing(state.items, {
+                allowMixed: state.allowMixed,
+                maxHeightIn: parseFloat(document.getElementById('max-height').value)||60,
+                maxWeightLbs: parseFloat(document.getElementById('max-weight').value)||2500,
+                palletTareLbs: 50, emulatorMode: state.mode==='EMULATOR'
+            });
+            renderModalSummary(); showModalStep(3);
+        }, 2200);
+    }
+
+    function cancelOptimization() {
+        _optimizationCancelled = true;
+        clearTimeout(_optimizationTimer);
+        clearInterval(_optimizationInterval);
+        closeRunModal();
+    }
+
+    function commitFromModal() { closeRunModal(); commitResults(); }
+
+    // ── Pallet Cubing ──────────────────────────────────────────────────────────
+    function runPalletCubing(items, config) {
+        const PALLET = { l:48, w:40 };
+        const { allowMixed, maxHeightIn, maxWeightLbs, palletTareLbs, emulatorMode } = config;
+        const hasDimsItems = items.filter(hasDims);
+        const usable   = hasDimsItems.filter(i=>!isOversized(i));
+        const excluded = items.filter(i=>!hasDims(i)).map(i=>i.sku||'(no SKU)');
+        const oversized = hasDimsItems.filter(isOversized).map(i=>i.sku||'(no SKU)');
+
+        // Group by order first, then by TP within each order — pallets never mix orders
+        const byOrder = {};
+        usable.forEach(item => {
+            const oid = item.orderId || '_default';
+            if (!byOrder[oid]) byOrder[oid] = {};
+            const tp = item.tp || '_default';
+            if (!byOrder[oid][tp]) byOrder[oid][tp] = [];
+            byOrder[oid][tp].push(item);
+        });
+
+        let pidx=1; const builds=[];
+        Object.entries(byOrder).forEach(([orderId, byTp]) => {
+            Object.entries(byTp).forEach(([tp, tpItems]) => {
+                const infoList = tpItems.map(item => {
+                    const o1=Math.floor(PALLET.l/item.lengthIn)*Math.floor(PALLET.w/item.widthIn);
+                    const o2=Math.floor(PALLET.l/item.widthIn)*Math.floor(PALLET.w/item.lengthIn);
+                    const ppl=Math.max(o1,o2);
+                    return { item, ppl, layerH:item.heightIn, layerW:ppl*item.weightLbs, layers:Math.ceil(item.quantity/ppl) };
+                }).sort((a,b)=>b.layerW-a.layerW);
+                const buildQueue = info => Array.from({length:info.layers},(_,l) => {
+                    const isLast=l===info.layers-1;
+                    const qty=isLast?(info.item.quantity-l*info.ppl):info.ppl;
+                    return { sku:info.item.sku, desc:info.item.description, qty, ppl:info.ppl, layerH:info.layerH, layerW:info.item.weightLbs*qty, hazardous:info.item.hazardous };
+                });
+                const stackLayers = queue => {
+                    let cur=null;
+                    const close=()=>{ if(cur?.layers.length) builds.push(finalizePallet(cur,PALLET,palletTareLbs,pidx++,orderId)); cur=null; };
+                    queue.forEach(layer => {
+                        if(!cur) cur={layers:[],heightIn:0,productW:0,tp,orderId};
+                        if(cur.heightIn+layer.layerH>maxHeightIn || cur.productW+layer.layerW+palletTareLbs>maxWeightLbs) close();
+                        if(!cur) cur={layers:[],heightIn:0,productW:0,tp,orderId};
+                        cur.layers.push(layer); cur.heightIn+=layer.layerH; cur.productW+=layer.layerW;
+                    });
+                    close();
+                };
+                if(allowMixed) { stackLayers(infoList.flatMap(buildQueue)); }
+                else { infoList.forEach(info=>stackLayers(buildQueue(info))); }
+            });
+        });
+        // Simulate full pallet picks from container allocation (determined by alloc-priority dropdown)
+        const allocPriority = emulatorMode ? null : (document.getElementById('alloc-priority')?.value || 'CONTAINER_DESC_BREAK');
+        const simulatedFullPicks = emulatorMode ? 0 : Math.max(0, Math.floor(usable.reduce((s,i)=>s+i.quantity,0) / 120));
+        const fullPicks = emulatorMode ? [] : Array.from({length:simulatedFullPicks},(_,e) => ({
+            palletId:`FPL-${String(e+1).padStart(3,'0')}`, lineItems:[{sku:'(full pallet pick)',desc:'Container allocation — no build required',qty:1}],
+            grossW:0, stackH:0, cubeUtil:100, configType:'Full Pick', tp:'', isFullPick:true, warnings:[]
+        }));
+        const selOrders=ORDERS.filter(o=>state.selectedOrderIds.has(o.id));
+        const totalCases=usable.reduce((s,i)=>s+i.quantity,0);
+        const hazCases=usable.filter(i=>i.hazardous).reduce((s,i)=>s+i.quantity,0);
+        const packCounts={};
+        usable.forEach(i=>{ const key=i.packLevel||'Pack'; packCounts[key]=(packCounts[key]||0)+i.quantity; });
+        return {
+            orderIds:[...state.selectedOrderIds], orderSummary:selOrders.map(o=>o.id).join(', '), mode:state.mode,
+            existingFullPallets:simulatedFullPicks, palletBuilds:builds.length,
+            totalPallets:builds.length+simulatedFullPicks,
+            totalCases, hazCases, nonHazCases:totalCases-hazCases, excludedItems:excluded, oversizedItems:oversized,
+            packCounts, builds:[...fullPicks,...builds]
+        };
+    }
+
+    function finalizePallet(p, PALLET, tareLbs, idx, orderId) {
+        const grossW=p.productW+tareLbs;
+        const skus=[...new Set(p.layers.map(l=>l.sku))];
+        const type=skus.length===1?'Single-Item':'Mixed';
+        const lineMap={};
+        p.layers.forEach(l=>{ if(!lineMap[l.sku]) lineMap[l.sku]={sku:l.sku,desc:l.desc,qty:0,hazardous:l.hazardous}; lineMap[l.sku].qty+=l.qty; });
+        const palletVol=PALLET.l*PALLET.w*60;
+        const itemVol=p.layers.reduce((s,l)=>{ const it=state.items.find(i=>i.sku===l.sku); return s+(it?it.lengthIn*it.widthIn*it.heightIn*l.qty:0); },0);
+        return {
+            palletId:`PLT-${String(idx).padStart(3,'0')}`, layers:p.layers, lineItems:Object.values(lineMap),
+            grossW, stackH:p.heightIn, cubeUtil:palletVol>0?Math.min((itemVol/palletVol)*100,100):0,
+            configType:type, tp:p.tp, orderId, isFullPick:false, warnings:grossW>2400?['Near weight limit']:[]
+        };
+    }
+
+    // ── Render ─────────────────────────────────────────────────────────────────
+    function summaryCardsHtml(cards) {
+        return cards.map(c=>`<div class="summary-card"><div class="s-val">${c.val}</div><div class="s-lbl">${c.lbl}</div></div>`).join('');
+    }
+
+    function renderModalSummary() {
+        const r=state.result;
+        document.getElementById('modal-summary').innerHTML = summaryCardsHtml([
+            {val:r.totalPallets,lbl:'Total Pallets'}, {val:r.existingFullPallets,lbl:'Full Pallet Picks'}, {val:r.palletBuilds,lbl:'Builds Required'}
+        ]);
+        const excl=document.getElementById('modal-excluded');
+        if(r.excludedItems.length>0){ document.getElementById('modal-excluded-msg').textContent=r.excludedItems.join(', '); excl.style.display='flex'; }
+        else { excl.style.display='none'; }
+        const over=document.getElementById('modal-oversized');
+        if(r.oversizedItems&&r.oversizedItems.length>0){ document.getElementById('modal-oversized-msg').textContent=r.oversizedItems.join(', '); over.style.display='flex'; }
+        else { over.style.display='none'; }
+    }
+
+    function renderResults() {
+        const r=state.result; if(!r) return;
+        document.getElementById('results-section').style.display='block';
+        document.getElementById('results-label').textContent = r.mode==='EMULATOR' ? '— Emulator' : `— ${r.orderSummary}`;
+        document.getElementById('commit-btn').style.display   = r.mode==='EMULATOR' ? 'none' : 'inline-flex';
+        document.getElementById('estimate-banner').style.display = r.mode==='EMULATOR' ? 'none' : 'flex';
+        const exclWarn=document.getElementById('excluded-warning');
+        if(r.excludedItems.length>0){ document.getElementById('excluded-list').textContent=' '+r.excludedItems.join(', '); exclWarn.style.display='flex'; }
+        else { exclWarn.style.display='none'; }
+        const oversizedWarn=document.getElementById('oversized-warning');
+        if(r.oversizedItems&&r.oversizedItems.length>0){ document.getElementById('oversized-list').textContent=' '+r.oversizedItems.join(', '); oversizedWarn.style.display='flex'; }
+        else { oversizedWarn.style.display='none'; }
+        document.getElementById('summary-cards').innerHTML = summaryCardsHtml([
+            {val:r.totalPallets,lbl:'Total Pallets'}, {val:r.existingFullPallets,lbl:'Full Pallet Picks'},
+            {val:r.palletBuilds,lbl:'Builds Required'}, {val:r.totalCases,lbl:'Total Packs'},
+            {val:r.hazCases,lbl:'Hazardous Packs'}, {val:r.nonHazCases,lbl:'Non-Haz Packs'}
+        ]);
+        // Pack type breakdown
+        const packEl = document.getElementById('pack-breakdown');
+        const packItemsEl = document.getElementById('pack-breakdown-items');
+        if (r.packCounts && Object.keys(r.packCounts).length > 0) {
+            packItemsEl.innerHTML = Object.entries(r.packCounts)
+                .map(([k,v]) => `<span class="pack-breakdown-item">${k}: ${v}</span>`).join(' ');
+            packEl.style.display = 'flex';
+        } else { packEl.style.display = 'none'; }
+        document.getElementById('pallets-grid').innerHTML = r.builds.map(renderPalletCard).join('');
+
+        // Per-order summary table
+        const orderSummarySection = document.getElementById('order-summary-section');
+        const orderSummaryBody = document.getElementById('order-summary-body');
+        if (r.orderIds && r.orderIds.length > 0) {
+            const perOrder = {};
+            r.orderIds.forEach(oid => {
+                const o = ORDERS.find(x => x.id === oid);
+                perOrder[oid] = { orderId: oid, customer: o?.customer || '', tp: o?.tp || '', builds: 0, totalPacks: 0, hazPacks: 0 };
+            });
+            r.builds.filter(b => !b.isFullPick).forEach(b => {
+                if (perOrder[b.orderId]) perOrder[b.orderId].builds++;
+            });
+            state.items.filter(hasDims).forEach(i => {
+                if (perOrder[i.orderId]) {
+                    perOrder[i.orderId].totalPacks += i.quantity;
+                    if (i.hazardous) perOrder[i.orderId].hazPacks += i.quantity;
+                }
+            });
+            orderSummaryBody.innerHTML = Object.values(perOrder).map(p => `
+                <tr style="border-bottom:1px solid #f0f0f5;">
+                    <td style="padding:.35rem .65rem;font-weight:700;color:#f08020;">${p.orderId}</td>
+                    <td style="padding:.35rem .65rem;color:#2d2d3a;">${p.customer}</td>
+                    <td style="padding:.35rem .65rem;color:#2d2d3a;">${p.tp}</td>
+                    <td style="padding:.35rem .65rem;text-align:right;font-weight:600;color:#2d2d3a;">${p.builds}</td>
+                    <td style="padding:.35rem .65rem;text-align:right;color:#2d2d3a;">${p.totalPacks}</td>
+                    <td style="padding:.35rem .65rem;text-align:right;color:${p.hazPacks>0?'#c02020':'#2d2d3a'};font-weight:${p.hazPacks>0?'700':'400'};">${p.hazPacks}</td>
+                </tr>`).join('');
+            orderSummarySection.style.display = 'block';
+        } else {
+            orderSummarySection.style.display = 'none';
+        }
+
+        addAuditEntry(`Optimization run for ${r.orderSummary}: ${r.palletBuilds} builds + ${r.existingFullPallets} full picks = ${r.totalPallets} total pallets`);
+    }
+
+    function renderPalletCard(b) {
+        if(b.isFullPick) return `<div class="pallet-card full-pick">
+            <div class="pallet-card-header"><span class="pallet-id">${b.palletId}</span><span class="pallet-type-badge">48×40 GMA</span></div>
+            <div style="font-size:.75rem;color:#1a6a38;"><i class="fas fa-check-circle" style="margin-right:.3rem;"></i>Full pallet pick — no build required</div>
+        </div>`;
+        const cfgClass=b.configType==='Mixed'?'config-mixed':'config-single';
+        const tpNote=b.tp&&b.tp!=='_default'?`<span class="tp-note">${b.tp}</span>`:'';
+        const orderNote=b.orderId&&b.orderId!=='_default'?`<span class="tp-note" style="color:#f08020;font-weight:600;">${b.orderId}</span>`:'';
+        const SHOW=6;
+        const reversed=[...b.layers].reverse();
+        const total=reversed.length;
+        const rows=reversed.map((l,i)=>{
+            const layerNum=total-i;
+            const isBottom=i===total-1;
+            return `<div class="layer-row ${isBottom?'bottom-layer':''}">
+                <span class="layer-num">L${layerNum}</span>
+                <span class="layer-sku">${l.sku}${l.hazardous?'<span class="haz-badge">HAZ</span>':''}</span>
+                <span class="layer-qty">${l.qty}${l.qty<l.ppl?' (partial)':''} × ${l.layerH}"h</span>
+            </div>`;
+        });
+        const layerHtml=rows.length<=SHOW?rows.join('')
+            :rows.slice(0,SHOW).join('')+`<span class="layers-more" onclick="this.nextElementSibling.style.display='block';this.style.display='none';">+ ${rows.length-SHOW} more layers…</span><div style="display:none;">${rows.slice(SHOW).join('')}</div>`;
+        return `<div class="pallet-card">
+            <div class="pallet-card-header">
+                <div><span class="pallet-id">${b.palletId}</span><span class="config-type-badge ${cfgClass}">${b.configType}</span>${tpNote}${orderNote}</div>
+                <span class="pallet-type-badge">48×40 GMA</span>
+            </div>
+            <div class="pallet-metrics">
+                <div class="pallet-metric"><div class="m-val">${b.stackH.toFixed(0)}"</div><div class="m-lbl">Stack Ht</div></div>
+                <div class="pallet-metric"><div class="m-val">${b.grossW.toFixed(0)}</div><div class="m-lbl">Gross Wt</div></div>
+                <div class="pallet-metric"><div class="m-val">${b.cubeUtil.toFixed(0)}%</div><div class="m-lbl">Cube Util</div></div>
+            </div>
+            <div class="util-bar"><div class="util-fill ${b.cubeUtil>85?'high':''}" style="width:${Math.min(b.cubeUtil,100).toFixed(0)}%"></div></div>
+            <div class="layers-label"><i class="fas fa-layer-group" style="margin-right:.25rem;"></i>Layer stack (top → bottom)</div>
+            ${layerHtml}
+            ${b.warnings.length?`<div class="pallet-warning">${b.warnings.join('; ')}</div>`:''}
+        </div>`;
+    }
+
+    function hideResults() {
+        document.getElementById('results-section').style.display='none';
+        document.getElementById('pack-breakdown').style.display='none';
+        document.getElementById('order-summary-section').style.display='none';
+    }
+    function clearResults() { state.result=null; hideResults(); }
+
+    // ── Commit ─────────────────────────────────────────────────────────────────
+    function commitResults() {
+        if(!state.result || state.mode==='EMULATOR') return;
+        const tripNum=String(2000+Math.floor(state.result.orderIds.length*13+state.result.totalPallets*7)).slice(-3);
+        const tripId=`TRP-2024-${tripNum}`;
+        state.result.orderIds.forEach(orderId=>{ const order=ORDERS.find(o=>o.id===orderId); if(order) order.onTrip=tripId; });
+        const summary=state.result.orderSummary, pallets=state.result.totalPallets;
+        addAuditEntry(`Committed: trip ${tripId} created with orders ${summary} (${pallets} pallets)`);
+        state.result=null; state.selectedOrderIds.clear();
+        hideResults(); renderOrderList(); updateRunButton();
+        notify(`Trip <strong>${tripId}</strong> created — orders ${summary} (${pallets} pallets).`, 'success');
+    }
+
+    // ── CSV Export ─────────────────────────────────────────────────────────────
+    function exportCsv() {
+        if(!state.result) return;
+        const rows=[['Pallet ID','Config Type','TP','SKU','Description','Quantity','Gross Weight (lbs)','Stack Height (in)','Cube Util %']];
+        state.result.builds.forEach(b=>(b.lineItems||[]).forEach(li=>rows.push([b.palletId,b.configType,b.tp||'',li.sku,li.desc,li.qty,b.grossW?.toFixed(1)||'',b.stackH?.toFixed(1)||'',b.cubeUtil?.toFixed(1)||''])));
+        const csv=rows.map(r=>r.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
+        const blob=new Blob([csv],{type:'text/csv'});
+        const url=URL.createObjectURL(blob);
+        const a=Object.assign(document.createElement('a'),{href:url,download:`pallet-opt-${state.result.orderIds.join('-')}.csv`});
+        document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
+        addAuditEntry(`CSV exported for ${state.result.orderSummary}`);
+    }
+
+    // ── Audit ──────────────────────────────────────────────────────────────────
+    function addAuditEntry(text) {
+        const now=new Date().toLocaleTimeString();
+        state.auditLog.unshift({time:now,text});
+        document.getElementById('audit-entries').innerHTML=state.auditLog.map(e=>`<div class="audit-entry"><span class="audit-time">${e.time}</span><span>${e.text}</span></div>`).join('');
+    }
+
+    // ── Notification ───────────────────────────────────────────────────────────
+    function notify(message, type='info') {
+        const n=document.createElement('div');
+        n.className=`notification notification-${type}`;
+        n.innerHTML=`<i class="fas fa-check-circle"></i><span style="flex:1;">${message}</span><button onclick="this.parentElement.remove()"><i class="fas fa-times"></i></button>`;
+        document.getElementById('notif-container').appendChild(n);
+        setTimeout(()=>{ if(n.parentElement) n.remove(); },7000);
+    }
+
+    // ── Init ───────────────────────────────────────────────────────────────────
+    document.addEventListener('DOMContentLoaded', () => { renderOrderTableHead(); renderOrderList(); });
+    </script>
+</body>
+</html>

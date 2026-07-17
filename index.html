@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trip Management Application - Dashboard</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+    <!-- Navigation Header -->
+    <header class="navbar">
+        <div class="nav-container">
+            <div class="nav-brand">
+                <i class="fas fa-truck"></i>
+                <span>Trip Management App</span>
+            </div>
+            <nav class="nav-menu">
+                <a href="index.html" class="nav-link active">
+                    <i class="fas fa-tachometer-alt"></i> Dashboard
+                </a>
+                <a href="trip-creation.html" class="nav-link">
+                    <i class="fas fa-plus-circle"></i> Create Trip
+                </a>
+                <a href="order-management.html" class="nav-link">
+                    <i class="fas fa-boxes"></i> Manage Orders
+                </a>
+                <a href="trip-monitoring.html" class="nav-link">
+                    <i class="fas fa-route"></i> Monitor Trips
+                </a>
+                <a href="pallet-optimization.html" class="nav-link"><i class="fas fa-layer-group"></i> Pallet Optimization</a>
+                <a href="reports.html" class="nav-link">
+                    <i class="fas fa-chart-bar"></i> Reports
+                </a>
+            </nav>
+            <div class="nav-user">
+                <i class="fas fa-user-circle"></i>
+                <span>John Manager</span>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <!-- Dashboard Header -->
+        <section class="page-header">
+            <h1>Trip Management Dashboard</h1>
+            <p>Monitor and manage your B2B shipment operations</p>
+        </section>
+
+        <!-- Key Metrics Cards -->
+        <section class="metrics-grid">
+            <div class="metric-card">
+                <div class="metric-icon">
+                    <i class="fas fa-truck-loading"></i>
+                </div>
+                <div class="metric-content">
+                    <h3>Active Trips</h3>
+                    <div class="metric-value">24</div>
+                    <div class="metric-change positive">
+                        <i class="fas fa-arrow-up"></i> +12% vs yesterday
+                    </div>
+                </div>
+            </div>
+
+            <div class="metric-card">
+                <div class="metric-icon">
+                    <i class="fas fa-boxes"></i>
+                </div>
+                <div class="metric-content">
+                    <h3>Orders in Transit</h3>
+                    <div class="metric-value">156</div>
+                    <div class="metric-change positive">
+                        <i class="fas fa-arrow-up"></i> +8% vs yesterday
+                    </div>
+                </div>
+            </div>
+
+            <div class="metric-card">
+                <div class="metric-icon">
+                    <i class="fas fa-percentage"></i>
+                </div>
+                <div class="metric-content">
+                    <h3>On-Time Delivery</h3>
+                    <div class="metric-value">98.2%</div>
+                    <div class="metric-change positive">
+                        <i class="fas fa-arrow-up"></i> +2.1% vs last week
+                    </div>
+                </div>
+            </div>
+
+            <div class="metric-card">
+                <div class="metric-icon">
+                    <i class="fas fa-exclamation-triangle"></i>
+                </div>
+                <div class="metric-content">
+                    <h3>Exceptions</h3>
+                    <div class="metric-value">3</div>
+                    <div class="metric-change negative">
+                        <i class="fas fa-arrow-down"></i> 2 resolved today
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Action Section -->
+        <section class="action-section">
+            <div class="action-buttons">
+                <a href="trip-creation.html" class="btn btn-primary">
+                    <i class="fas fa-plus"></i> Create New Trip
+                </a>
+                <button class="btn btn-secondary" onclick="refreshDashboard()">
+                    <i class="fas fa-sync-alt"></i> Refresh Data
+                </button>
+                <button class="btn btn-outline" onclick="exportData()">
+                    <i class="fas fa-download"></i> Export Report
+                </button>
+            </div>
+        </section>
+
+        <!-- Recent Activity and Quick Access Grid -->
+        <section class="dashboard-grid">
+            <!-- Recent Trips -->
+            <div class="dashboard-card">
+                <div class="card-header">
+                    <h2>Recent Trips</h2>
+                    <a href="trip-monitoring.html" class="view-all">View All</a>
+                </div>
+                <div class="card-content">
+                    <div class="trip-list">
+                        <div class="trip-item">
+                            <div class="trip-info">
+                                <div class="trip-id">TRP-2024-001</div>
+                                <div class="trip-route">Warehouse A → Customer Site</div>
+                                <div class="trip-date">Created: Jan 30, 2024</div>
+                            </div>
+                            <div class="trip-status">
+                                <span class="status-badge status-in-progress">In Progress</span>
+                            </div>
+                        </div>
+
+                        <div class="trip-item">
+                            <div class="trip-info">
+                                <div class="trip-id">TRP-2024-002</div>
+                                <div class="trip-route">Warehouse B → Distribution Center</div>
+                                <div class="trip-date">Created: Jan 30, 2024</div>
+                            </div>
+                            <div class="trip-status">
+                                <span class="status-badge status-completed">Completed</span>
+                            </div>
+                        </div>
+
+                        <div class="trip-item">
+                            <div class="trip-info">
+                                <div class="trip-id">TRP-2024-003</div>
+                                <div class="trip-route">Warehouse A → Multiple Stops</div>
+                                <div class="trip-date">Created: Jan 29, 2024</div>
+                            </div>
+                            <div class="trip-status">
+                                <span class="status-badge status-delayed">Delayed</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Pending Orders -->
+            <div class="dashboard-card">
+                <div class="card-header">
+                    <h2>Pending Orders</h2>
+                    <a href="order-management.html" class="view-all">View All</a>
+                </div>
+                <div class="card-content">
+                    <div class="order-list">
+                        <div class="order-item">
+                            <div class="order-info">
+                                <div class="order-id">ORD-12345</div>
+                                <div class="customer">ACME Corporation</div>
+                                <div class="priority">High Priority</div>
+                            </div>
+                            <div class="order-actions">
+                                <button class="btn btn-sm btn-primary">Assign to Trip</button>
+                            </div>
+                        </div>
+
+                        <div class="order-item">
+                            <div class="order-info">
+                                <div class="order-id">ORD-12346</div>
+                                <div class="customer">Global Industries</div>
+                                <div class="priority">Standard</div>
+                            </div>
+                            <div class="order-actions">
+                                <button class="btn btn-sm btn-primary">Assign to Trip</button>
+                            </div>
+                        </div>
+
+                        <div class="order-item">
+                            <div class="order-info">
+                                <div class="order-id">ORD-12347</div>
+                                <div class="customer">Tech Solutions Ltd</div>
+                                <div class="priority">Standard</div>
+                            </div>
+                            <div class="order-actions">
+                                <button class="btn btn-sm btn-primary">Assign to Trip</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Alerts and Notifications -->
+        <section class="alerts-section">
+            <div class="dashboard-card">
+                <div class="card-header">
+                    <h2>Alerts & Notifications</h2>
+                    <span class="alert-count">3 Active</span>
+                </div>
+                <div class="card-content">
+                    <div class="alert-list">
+                        <div class="alert-item alert-warning">
+                            <i class="fas fa-exclamation-triangle"></i>
+                            <div class="alert-content">
+                                <div class="alert-title">Trip TRP-2024-003 Delayed</div>
+                                <div class="alert-message">Expected delivery time exceeded by 2 hours</div>
+                                <div class="alert-time">2 hours ago</div>
+                            </div>
+                            <div class="alert-actions">
+                                <button class="btn btn-sm btn-outline">View Details</button>
+                            </div>
+                        </div>
+
+                        <div class="alert-item alert-info">
+                            <i class="fas fa-info-circle"></i>
+                            <div class="alert-content">
+                                <div class="alert-title">Weather Advisory</div>
+                                <div class="alert-message">Heavy rain expected on Route 95 - consider rerouting</div>
+                                <div class="alert-time">4 hours ago</div>
+                            </div>
+                            <div class="alert-actions">
+                                <button class="btn btn-sm btn-outline">Dismiss</button>
+                            </div>
+                        </div>
+
+                        <div class="alert-item alert-success">
+                            <i class="fas fa-check-circle"></i>
+                            <div class="alert-content">
+                                <div class="alert-title">Trip TRP-2024-002 Completed</div>
+                                <div class="alert-message">All orders delivered successfully</div>
+                                <div class="alert-time">6 hours ago</div>
+                            </div>
+                            <div class="alert-actions">
+                                <button class="btn btn-sm btn-outline">View Report</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <p>&copy; 2024 Deposco Trip Management Application. All rights reserved.</p>
+    </footer>
+
+    <script src="app.js"></script>
+</body>
+</html>
