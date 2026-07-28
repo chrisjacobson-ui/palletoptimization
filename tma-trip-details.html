@@ -1,0 +1,1297 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trip Management — Deposco</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            font-size: 13px;
+            background: #f0f0f4;
+            color: #2d2d3a;
+            line-height: 1.5;
+            min-height: 100vh;
+        }
+
+        /* ── Top bar ── */
+        .topbar {
+            position: sticky; top: 0; z-index: 300;
+            background: #252530;
+            height: 44px;
+            display: flex; align-items: center;
+            padding: 0 .75rem;
+            gap: .75rem;
+            box-shadow: 0 2px 4px rgba(0,0,0,.35);
+        }
+        .topbar-hamburger { color: rgba(255,255,255,.6); font-size: .95rem; cursor: pointer; padding: .25rem; }
+        .topbar-brand {
+            display: flex; align-items: center; gap: .4rem;
+            text-decoration: none;
+        }
+        .topbar-brand .logo-mark {
+            width: 24px; height: 24px;
+            background: #f08020;
+            border-radius: 3px;
+            display: flex; align-items: center; justify-content: center;
+            font-weight: 900; font-size: .7rem; color: white; letter-spacing: -.5px;
+        }
+        .topbar-brand .logo-text {
+            font-size: .82rem; font-weight: 700; color: white; letter-spacing: .08em; text-transform: uppercase;
+        }
+        .topbar-search {
+            flex: 1; max-width: 500px;
+            background: rgba(255,255,255,.1); border: 1px solid rgba(255,255,255,.12);
+            border-radius: 4px; padding: .3rem .75rem;
+            color: rgba(255,255,255,.85); font-size: .8rem; outline: none;
+        }
+        .topbar-search::placeholder { color: rgba(255,255,255,.4); }
+        .topbar-icons { margin-left: auto; display: flex; align-items: center; gap: .85rem; }
+        .topbar-icons i { color: rgba(255,255,255,.6); font-size: .9rem; cursor: pointer; }
+        .topbar-icons i:hover { color: white; }
+
+        /* ── Layout ── */
+        .app-layout { display: flex; min-height: calc(100vh - 44px); }
+
+        /* ── Sidebar ── */
+        .sidebar {
+            width: 190px; flex-shrink: 0;
+            background: #2a2a38;
+            padding: .5rem 0;
+            overflow-y: auto;
+        }
+        .sidebar-section-label {
+            font-size: .6rem; font-weight: 700; letter-spacing: .1em; text-transform: uppercase;
+            color: rgba(255,255,255,.3); padding: .6rem .85rem .25rem;
+        }
+        .sidebar-item {
+            display: flex; align-items: center; gap: .55rem;
+            padding: .42rem .85rem;
+            color: rgba(255,255,255,.65);
+            text-decoration: none; font-size: .78rem; font-weight: 500;
+            cursor: pointer; transition: all .1s ease;
+        }
+        .sidebar-item:hover { color: white; background: rgba(255,255,255,.05); }
+        .sidebar-item.active { color: #f08020; background: rgba(240,128,32,.08); }
+        .sidebar-item i { width: 13px; text-align: center; font-size: .78rem; flex-shrink: 0; }
+        .sidebar-item .chevron { margin-left: auto; font-size: .6rem; color: rgba(255,255,255,.25); }
+        .sidebar-divider { height: 1px; background: rgba(255,255,255,.07); margin: .3rem 0; }
+        .sidebar-sub {
+            padding-left: 2rem;
+        }
+        .sidebar-sub .sidebar-item {
+            font-size: .75rem; padding: .32rem .85rem;
+        }
+
+        /* ── Main ── */
+        .main { flex: 1; overflow-x: hidden; display: flex; flex-direction: column; }
+
+        /* ── Page chrome ── */
+        .page-chrome {
+            background: white; border-bottom: 1px solid #e0e0ea;
+            padding: .5rem 1.25rem .6rem;
+        }
+        .breadcrumb {
+            font-size: .72rem; color: #9090a8; margin-bottom: .25rem;
+        }
+        .breadcrumb a { color: #9090a8; text-decoration: none; }
+        .breadcrumb a:hover { color: #f08020; }
+        .trip-title-row {
+            display: flex; align-items: center; gap: .75rem;
+        }
+        .back-arrow { color: #5a5a72; font-size: .85rem; cursor: pointer; margin-right: .1rem; }
+        .trip-id { font-size: 1.15rem; font-weight: 700; color: #1e1e2a; }
+        .trip-status-badge {
+            display: inline-flex; align-items: center;
+            padding: .2rem .65rem; border-radius: 20px;
+            font-size: .72rem; font-weight: 700;
+            background: #d0eeff; color: #1a5a88;
+        }
+        .trip-updated { font-size: .72rem; color: #a0a0b8; margin-left: .25rem; }
+        .trip-actions-bar {
+            margin-left: auto; display: flex; gap: .5rem; align-items: center;
+        }
+        .btn {
+            display: inline-flex; align-items: center; gap: .35rem;
+            padding: .38rem .9rem; border-radius: 3px; font-weight: 600; font-size: .78rem;
+            cursor: pointer; border: none; transition: all .1s ease; text-decoration: none;
+            white-space: nowrap;
+        }
+        .btn-primary   { background: #f08020; color: white; }
+        .btn-primary:hover { background: #d96e18; }
+        .btn-primary:disabled { background: #f5c090; cursor: not-allowed; }
+        .btn-secondary { background: white; color: #4a4a5a; border: 1px solid #c8c8d8; }
+        .btn-secondary:hover { background: #f5f5f8; border-color: #a8a8b8; }
+        .btn-success   { background: #28a060; color: white; }
+        .btn-success:hover { background: #1e8050; }
+        .btn-success:disabled { background: #88d0a8; cursor: not-allowed; }
+        .btn-danger    { background: white; color: #c03030; border: 1px solid #e0b0b0; }
+        .btn-danger:hover { background: #fff0f0; }
+        .btn-sm { padding: .26rem .65rem; font-size: .73rem; }
+
+        /* Actions dropdown */
+        .actions-wrap { position: relative; }
+        .actions-dropdown {
+            display: none; position: absolute; top: calc(100% + 3px); right: 0;
+            background: white; border: 1px solid #d0d0de; border-radius: 3px;
+            box-shadow: 0 4px 14px rgba(0,0,0,.15); z-index: 200;
+            min-width: 200px;
+        }
+        .actions-dropdown.open { display: block; }
+        .actions-dropdown-section {
+            padding: .4rem .85rem .2rem;
+            font-size: .65rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase;
+            color: #9090a8; border-bottom: 1px solid #f0f0f5;
+        }
+        .actions-dropdown-item {
+            padding: .5rem .85rem; font-size: .8rem; cursor: pointer;
+            color: #2d2d3a; display: flex; align-items: center; gap: .5rem;
+            transition: background .08s;
+        }
+        .actions-dropdown-item:hover { background: #fafafa; color: #f08020; }
+        .actions-dropdown-item.disabled { color: #c0c0d0; cursor: default; }
+        .actions-dropdown-item.disabled:hover { background: none; color: #c0c0d0; }
+        .actions-dropdown-item i { width: 14px; text-align: center; font-size: .75rem; }
+
+        /* ── Trip Overview ── */
+        .section-wrap { background: white; border-bottom: 1px solid #e0e0ea; padding: .85rem 1.25rem; }
+        .section-title { font-size: .82rem; font-weight: 700; color: #1e1e2a; margin-bottom: .75rem; }
+        .fields-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: .75rem 1.25rem;
+        }
+        .field-item { display: flex; flex-direction: column; gap: .15rem; min-width: 0; }
+        .field-label {
+            font-size: .68rem; color: #7a7a92; font-weight: 500;
+        }
+        .field-value {
+            font-size: .8rem; color: #1e1e2a; font-weight: 500;
+            display: flex; align-items: center; gap: .35rem;
+        }
+        .field-value.link { color: #f08020; cursor: pointer; }
+        .field-value .lock-icon { color: #c8c8d8; font-size: .65rem; }
+
+        /* ── Tabs ── */
+        .tab-bar {
+            background: white; border-bottom: 2px solid #e0e0ea;
+            padding: 0 1.25rem;
+            display: flex; gap: 0;
+        }
+        .tab {
+            padding: .6rem 1rem; font-size: .8rem; font-weight: 600;
+            color: #7a7a92; cursor: pointer; border-bottom: 2px solid transparent;
+            margin-bottom: -2px; transition: all .1s;
+        }
+        .tab:hover { color: #2d2d3a; }
+        .tab.active { color: #f08020; border-bottom-color: #f08020; }
+
+        /* ── Tab content ── */
+        .tab-content { padding: 1rem 1.25rem; flex: 1; }
+        .tab-pane { display: none; }
+        .tab-pane.active { display: block; }
+
+        /* ── Table toolbar ── */
+        .table-toolbar {
+            display: flex; align-items: center; gap: .5rem; margin-bottom: .65rem; flex-wrap: wrap;
+        }
+        .table-toolbar-title { font-size: .82rem; font-weight: 700; color: #1e1e2a; margin-right: .25rem; }
+        .view-select {
+            border: 1px solid #d0d0de; border-radius: 3px; padding: .28rem .55rem;
+            font-size: .75rem; color: #2d2d3a; background: white; cursor: pointer; outline: none;
+        }
+        .table-toolbar-right { margin-left: auto; display: flex; gap: .4rem; }
+        .pagination-info { font-size: .72rem; color: #9090a8; display: flex; align-items: center; gap: .3rem; }
+        .pagination-info button {
+            background: none; border: 1px solid #d0d0de; border-radius: 2px;
+            width: 22px; height: 22px; cursor: pointer; color: #6a6a82; font-size: .65rem;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .pagination-info button:hover { background: #f5f5f8; }
+
+        /* ── Data table ── */
+        .data-table-wrap { overflow-x: auto; }
+        .data-table {
+            width: 100%; border-collapse: collapse; font-size: .76rem; white-space: nowrap;
+        }
+        .data-table thead th {
+            background: #f5f5f8; border-bottom: 1px solid #e0e0ea;
+            padding: .4rem .65rem; text-align: left;
+            font-size: .67rem; font-weight: 700; color: #6060788; text-transform: uppercase;
+            letter-spacing: .04em; cursor: pointer; user-select: none; color: #606078;
+        }
+        .data-table thead th .col-sub { font-size: .6rem; color: #a0a0b8; display: block; font-weight: 400; text-transform: none; letter-spacing: 0; }
+        .data-table thead th:hover { color: #2d2d3a; }
+        .data-table tbody tr { border-bottom: 1px solid #f0f0f5; transition: background .07s; }
+        .data-table tbody tr:hover { background: #fafafa; }
+        .data-table td { padding: .4rem .65rem; color: #2d2d3a; vertical-align: middle; }
+        .order-link { color: #f08020; font-weight: 700; text-decoration: none; cursor: pointer; }
+        .order-link:hover { text-decoration: underline; }
+        .type-badge {
+            display: inline-block; font-size: .67rem; font-weight: 600;
+            padding: .12rem .5rem; border-radius: 3px;
+            background: #e8e8f0; color: #4a4a62;
+        }
+        .status-badge {
+            display: inline-flex; align-items: center; gap: .3rem;
+            font-size: .67rem; font-weight: 700;
+            padding: .12rem .5rem; border-radius: 20px;
+        }
+        .status-new      { background: #d0eeff; color: #1a5a88; }
+        .status-released { background: #d8f0e0; color: #1a6a38; }
+
+        /* ── Pallet Optimization results panel (inline on trip) ── */
+        .opt-results-section {
+            display: none;
+            background: white; border: 1px solid #e0e0ea; border-radius: 4px;
+            margin-top: 1rem;
+        }
+        .opt-results-header {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: .6rem 1rem; border-bottom: 1px solid #e8e8f0; background: #fafafa;
+        }
+        .opt-results-header h3 { font-size: .82rem; font-weight: 700; color: #1e1e2a; display: flex; align-items: center; gap: .4rem; }
+        .opt-results-body { padding: 1rem; }
+
+        /* ── Summary cards ── */
+        .summary-grid {
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+            gap: .5rem; margin-bottom: 1rem;
+        }
+        .summary-card {
+            background: #fafafa; border: 1px solid #e8e8f0; border-radius: 3px;
+            padding: .6rem; text-align: center;
+        }
+        .summary-card .s-val { font-size: 1.5rem; font-weight: 700; color: #f08020; line-height: 1.1; }
+        .summary-card .s-lbl { font-size: .65rem; color: #787890; margin-top: .15rem; text-transform: uppercase; letter-spacing: .04em; }
+
+        /* ── Banners ── */
+        .banner {
+            display: flex; align-items: flex-start; gap: .6rem;
+            padding: .65rem .85rem; border-radius: 3px; font-size: .78rem; margin-bottom: .65rem;
+            border-left: 3px solid;
+        }
+        .banner i { margin-top: .1rem; flex-shrink: 0; font-size: .85rem; }
+        .banner strong { display: block; font-weight: 700; margin-bottom: .1rem; }
+        .banner-estimate  { background: #fffbeb; border-left-color: #f08020; color: #7a4a10; }
+        .banner-partial   { background: #fff3ee; border-left-color: #e05010; color: #8a3010; }
+        .banner-excluded  { background: #fff0f0; border-left-color: #d03030; color: #8a1818; }
+
+        /* ── Pallet cards ── */
+        .pallets-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(265px, 1fr)); gap: .65rem; }
+        .pallet-card {
+            border: 1px solid #e0e0ea; border-radius: 4px; padding: .85rem;
+            background: white; transition: border-color .1s;
+        }
+        .pallet-card:hover { border-color: #f08020; }
+        .pallet-card.full-pick { border-color: #88d0a8; background: #f5fdf8; }
+        .pallet-card-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: .55rem; }
+        .pallet-id { font-weight: 700; font-size: .85rem; color: #f08020; }
+        .pallet-type-badge { font-size: .65rem; color: #787890; background: #f0f0f6; padding: .12rem .4rem; border-radius: 10px; }
+        .config-type-badge { font-size: .65rem; font-weight: 700; padding: .12rem .4rem; border-radius: 10px; margin-left: .2rem; }
+        .config-mixed  { background: #f0eaff; color: #6030a0; }
+        .config-single { background: #e0f5e8; color: #1a6a38; }
+        .pallet-metrics { display: grid; grid-template-columns: repeat(3,1fr); gap: .35rem; margin-bottom: .5rem; }
+        .pallet-metric { text-align: center; background: #fafafa; border-radius: 3px; padding: .35rem .25rem; border: 1px solid #eeeef5; }
+        .pallet-metric .m-val { font-size: .88rem; font-weight: 700; color: #f08020; }
+        .pallet-metric .m-lbl { font-size: .6rem; color: #9090a8; margin-top: .08rem; }
+        .util-bar { height: 3px; background: #e8e8f0; border-radius: 2px; margin-bottom: .5rem; overflow: hidden; }
+        .util-fill { height: 100%; border-radius: 2px; background: #f08020; }
+        .layers-label { font-size: .62rem; font-weight: 700; color: #9090a8; text-transform: uppercase; letter-spacing: .05em; margin-bottom: .25rem; }
+        .layer-row {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: .22rem .35rem; margin-bottom: .15rem; border-radius: 3px;
+            font-size: .72rem; border: 1px solid #eeeef5; background: #fafafa;
+        }
+        .layer-row.bottom-layer { border-color: #ffc890; background: #fff8f2; }
+        .layer-num { font-weight: 700; color: #b0b0c8; font-size: .62rem; margin-right: .25rem; }
+        .layer-sku { font-weight: 600; color: #2d2d3a; }
+        .layer-qty { color: #787890; font-size: .7rem; }
+        .haz-badge { font-size: .58rem; font-weight: 700; padding: .06rem .25rem; border-radius: 8px; background: #ffe0e0; color: #c02020; margin-left: .2rem; }
+        .layers-more { font-size: .7rem; color: #f08020; cursor: pointer; margin-top: .12rem; display: block; }
+        .layers-more:hover { text-decoration: underline; }
+        .pallet-warning { font-size: .68rem; color: #925010; margin-top: .35rem; background: #fff3e0; padding: .22rem .4rem; border-radius: 3px; border: 1px solid #ffd0a0; }
+        .tp-note { font-size: .65rem; color: #9090a8; margin-left: .2rem; }
+
+        /* ── Audit log ── */
+        .audit-log { margin-top: 1rem; background: #fafafa; border-radius: 3px; padding: .85rem; border: 1px solid #e8e8f0; }
+        .audit-log h4 { font-size: .68rem; font-weight: 700; color: #787890; text-transform: uppercase; letter-spacing: .06em; margin-bottom: .5rem; }
+        .audit-entry { display: flex; gap: .65rem; font-size: .73rem; color: #4a4a5a; padding: .25rem 0; border-bottom: 1px solid #eeeef5; }
+        .audit-entry:last-child { border-bottom: none; }
+        .audit-time { color: #b0b0c8; white-space: nowrap; min-width: 54px; }
+
+        /* ── Per-order summary table ── */
+        .order-summary-table { width: 100%; border-collapse: collapse; font-size: .76rem; margin-bottom: 1rem; }
+        .order-summary-table thead th {
+            background: #f5f5f8; border-bottom: 2px solid #e0e0ea;
+            padding: .35rem .65rem; text-align: left;
+            font-size: .65rem; font-weight: 700; color: #606078; text-transform: uppercase; letter-spacing: .04em;
+        }
+        .order-summary-table thead th:last-child, .order-summary-table thead th:nth-child(n+4) { text-align: right; }
+        .order-summary-table tbody td { padding: .35rem .65rem; border-bottom: 1px solid #f0f0f5; }
+        .order-summary-table tbody td:nth-child(n+4) { text-align: right; }
+
+        /* ── Modal ── */
+        .modal-overlay {
+            display: none; position: fixed; inset: 0;
+            background: rgba(0,0,0,.45); z-index: 500;
+            align-items: center; justify-content: center;
+        }
+        .modal-overlay.open { display: flex; }
+        .modal {
+            background: white; border-radius: 4px;
+            width: 90%; max-width: 600px; max-height: 90vh;
+            overflow-y: auto; box-shadow: 0 8px 40px rgba(0,0,0,.28);
+            animation: modalIn .16s ease;
+        }
+        .modal-wide { max-width: 780px; }
+        @keyframes modalIn { from { transform: translateY(14px); opacity: 0; } to { transform: none; opacity: 1; } }
+        .modal-header {
+            padding: .75rem 1.1rem; border-bottom: 1px solid #e0e0ea;
+            display: flex; justify-content: space-between; align-items: center;
+            background: #fafafa; position: sticky; top: 0; z-index: 2;
+        }
+        .modal-header h2 { font-size: .88rem; font-weight: 700; color: #1e1e2a; display: flex; align-items: center; gap: .4rem; }
+        .modal-header h2 i { color: #f08020; }
+        .modal-close { background: none; border: none; cursor: pointer; color: #9090a8; font-size: .95rem; padding: .1rem; }
+        .modal-close:hover { color: #2d2d3a; }
+        .modal-body { padding: 1.1rem; }
+        .modal-footer {
+            padding: .65rem 1.1rem 1.1rem; display: flex; justify-content: flex-end; gap: .45rem;
+            border-top: 1px solid #e0e0ea; position: sticky; bottom: 0; background: white; z-index: 2;
+        }
+
+        /* Confirm table */
+        .confirm-table { width: 100%; font-size: .8rem; border: 1px solid #e0e0ea; border-collapse: collapse; margin-bottom: 1rem; border-radius: 3px; overflow: hidden; }
+        .confirm-table td { padding: .42rem .75rem; border-bottom: 1px solid #eeeef5; }
+        .confirm-table tr:last-child td { border-bottom: none; }
+        .confirm-table td:first-child { color: #787890; background: #fafafa; width: 38%; font-weight: 500; }
+        .confirm-table td:last-child { font-weight: 600; color: #1e1e2a; }
+        .confirm-table select {
+            border: 1px solid #d0d0de; border-radius: 3px; padding: .28rem .5rem;
+            font-size: .76rem; background: white; outline: none; color: #2d2d3a;
+        }
+        .confirm-table select:focus { border-color: #f08020; box-shadow: 0 0 0 2px rgba(240,128,32,.12); }
+
+        /* Spinner */
+        .spinner-body { display: none; flex-direction: column; align-items: center; justify-content: center; padding: 2.25rem; gap: .65rem; }
+        .spinner-body.active { display: flex; }
+        .dep-spinner {
+            width: 38px; height: 38px; border: 3px solid #e8e8f0; border-top-color: #f08020;
+            border-radius: 50%; animation: spin .8s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* Notification */
+        .notification-container { position: fixed; bottom: 1.1rem; right: 1.1rem; z-index: 9999; display: flex; flex-direction: column; gap: .45rem; }
+        .notification {
+            background: white; border-radius: 4px; padding: .65rem .9rem;
+            box-shadow: 0 4px 16px rgba(0,0,0,.15); display: flex; align-items: center; gap: .6rem;
+            max-width: 360px; font-size: .8rem; border: 1px solid #e0e0ea;
+            animation: notifIn .18s ease;
+        }
+        @keyframes notifIn { from { transform: translateY(8px); opacity: 0; } to { transform: none; opacity: 1; } }
+        .notification-success { border-left: 3px solid #28a060; }
+        .notification-success i { color: #28a060; }
+        .notification button { background: none; border: none; cursor: pointer; color: #b0b0c8; margin-left: auto; font-size: .82rem; flex-shrink: 0; }
+
+        /* Pack breakdown strip */
+        .pack-breakdown {
+            display: flex; align-items: center; gap: .5rem; flex-wrap: wrap;
+            padding: .4rem .65rem; background: #fafafa; border: 1px solid #e8e8f0;
+            border-radius: 3px; margin-bottom: .85rem; font-size: .75rem;
+        }
+        .pack-breakdown-label { font-weight: 700; color: #686880; text-transform: uppercase; font-size: .65rem; letter-spacing: .06em; white-space: nowrap; }
+        .pack-breakdown-item { color: #2d2d3a; padding: .12rem .45rem; background: #eeeef5; border-radius: 10px; font-size: .72rem; }
+
+        /* Containers tab placeholder */
+        .empty-tab { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 3rem; color: #b0b0c8; gap: .5rem; }
+        .empty-tab i { font-size: 2rem; }
+        .empty-tab p { font-size: .82rem; }
+
+        /* Trip fields updated highlight */
+        .field-updated .field-value { color: #28a060; font-weight: 700; }
+        .field-updated .field-label::after { content: ' ↑'; color: #28a060; font-size: .6rem; }
+    </style>
+</head>
+<body>
+
+<!-- Top bar -->
+<div class="topbar">
+    <i class="fas fa-bars topbar-hamburger"></i>
+    <a class="topbar-brand" href="#">
+        <div class="logo-mark">D</div>
+        <span class="logo-text">Deposco</span>
+    </a>
+    <input type="text" class="topbar-search" placeholder="Search">
+    <div class="topbar-icons">
+        <i class="fas fa-th-large"></i>
+        <i class="fas fa-bell"></i>
+        <i class="fas fa-question-circle"></i>
+        <i class="fas fa-user-circle"></i>
+    </div>
+</div>
+
+<div class="app-layout">
+
+    <!-- Sidebar -->
+    <nav class="sidebar">
+        <div class="sidebar-section-label">Application Menu</div>
+        <a class="sidebar-item" href="#"><i class="fas fa-database"></i> Master Data <i class="fas fa-chevron-right chevron"></i></a>
+        <a class="sidebar-item" href="#"><i class="fas fa-warehouse"></i> Warehouse Setup <i class="fas fa-chevron-right chevron"></i></a>
+        <a class="sidebar-item" href="#"><i class="fas fa-boxes"></i> Inventory Admin <i class="fas fa-chevron-right chevron"></i></a>
+        <a class="sidebar-item" href="#"><i class="fas fa-sign-in-alt"></i> Putaway <i class="fas fa-chevron-right chevron"></i></a>
+        <a class="sidebar-item" href="#"><i class="fas fa-cart-plus"></i> Purchasing <i class="fas fa-chevron-right chevron"></i></a>
+        <a class="sidebar-item" href="#"><i class="fas fa-shopping-cart"></i> Orders <i class="fas fa-chevron-right chevron"></i></a>
+        <a class="sidebar-item" href="#"><i class="fas fa-layer-group"></i> Order Processing <i class="fas fa-chevron-right chevron"></i></a>
+        <a class="sidebar-item active" href="#"><i class="fas fa-truck"></i> Distribution <i class="fas fa-chevron-up chevron"></i></a>
+        <div class="sidebar-sub">
+            <a class="sidebar-item active" href="#" style="color:#f08020;">Trip Management</a>
+            <a class="sidebar-item" href="#">Pick Waves</a>
+            <a class="sidebar-item" href="#">Work Groups</a>
+            <a class="sidebar-item" href="#">Pick Tasks</a>
+            <a class="sidebar-item" href="#">Replenishment Tasks</a>
+            <a class="sidebar-item" href="#">Cartonization Requests</a>
+            <a class="sidebar-item" href="#">Cartonization Results</a>
+            <a class="sidebar-item" href="#">Pick Wave Build Profile</a>
+            <a class="sidebar-item" href="#">Order Release Profile</a>
+        </div>
+        <div class="sidebar-divider"></div>
+        <a class="sidebar-item" href="#"><i class="fas fa-box"></i> Packing <i class="fas fa-chevron-right chevron"></i></a>
+        <a class="sidebar-item" href="#"><i class="fas fa-shipping-fast"></i> Shipping <i class="fas fa-chevron-right chevron"></i></a>
+        <a class="sidebar-item" href="#"><i class="fas fa-file-invoice-dollar"></i> Billing <i class="fas fa-chevron-right chevron"></i></a>
+        <div class="sidebar-divider"></div>
+        <a class="sidebar-item" href="#"><i class="fas fa-chart-bar"></i> Performance <i class="fas fa-chevron-right chevron"></i></a>
+        <a class="sidebar-item" href="#"><i class="fas fa-cog"></i> Setup <i class="fas fa-chevron-right chevron"></i></a>
+    </nav>
+
+    <!-- Main -->
+    <div class="main">
+
+        <!-- Page header -->
+        <div class="page-chrome">
+            <div class="breadcrumb"><a href="#">Trip Management</a></div>
+            <div class="trip-title-row">
+                <i class="fas fa-chevron-left back-arrow"></i>
+                <span class="trip-id">20260722163113</span>
+                <span class="trip-status-badge">Planned</span>
+                <span class="trip-updated">Updated: Jul 22, 2026 16:31</span>
+                <div class="trip-actions-bar">
+                    <div class="actions-wrap">
+                        <button class="btn btn-primary" id="actions-btn" onclick="toggleActionsMenu(event)">
+                            Actions <i class="fas fa-chevron-down" style="font-size:.62rem;margin-left:.1rem;"></i>
+                        </button>
+                        <div class="actions-dropdown" id="actions-dropdown">
+                            <div class="actions-dropdown-section">Actions</div>
+                            <div class="actions-dropdown-item" onclick="closeActionsMenu(); openOptModal();"><i class="fas fa-layer-group"></i> Run Pallet Optimization</div>
+                            <div class="actions-dropdown-item" onclick="closeActionsMenu();"><i class="fas fa-edit"></i> Modify Trip</div>
+                            <div class="actions-dropdown-item" onclick="closeActionsMenu();"><i class="fas fa-times-circle"></i> Cancel Trip</div>
+                            <div class="actions-dropdown-item disabled"><i class="fas fa-print"></i> Print BOL</div>
+                        </div>
+                    </div>
+                    <button class="btn btn-primary" onclick="notify('Trip saved.','success')">Save Trip</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Trip Overview -->
+        <div class="section-wrap">
+            <div class="section-title">Trip Overview</div>
+            <div class="fields-grid">
+                <div class="field-item">
+                    <span class="field-label">Reference Number</span>
+                    <span class="field-value">REF123 <i class="fas fa-lock lock-icon"></i></span>
+                </div>
+                <div class="field-item">
+                    <span class="field-label">Account Number</span>
+                    <span class="field-value">ABC6458644 <i class="fas fa-lock lock-icon"></i></span>
+                </div>
+                <div class="field-item">
+                    <span class="field-label">Dock Door</span>
+                    <span class="field-value link">SHIPPING_DOOR1 <i class="fas fa-lock lock-icon"></i></span>
+                </div>
+                <div class="field-item">
+                    <span class="field-label">Estimated Delivery Date</span>
+                    <span class="field-value">Jul 30, 2026 <i class="fas fa-lock lock-icon"></i></span>
+                </div>
+                <div class="field-item">
+                    <span class="field-label">Business Unit</span>
+                    <span class="field-value link">DEMOSAND3PL <i class="fas fa-lock lock-icon"></i></span>
+                </div>
+                <div class="field-item">
+                    <span class="field-label">Carrier Equipment Number</span>
+                    <span class="field-value"><i class="fas fa-lock lock-icon"></i></span>
+                </div>
+                <div class="field-item">
+                    <span class="field-label">Driver Name</span>
+                    <span class="field-value"><i class="fas fa-lock lock-icon"></i></span>
+                </div>
+                <div class="field-item">
+                    <span class="field-label">SCAC</span>
+                    <span class="field-value">SCAC <i class="fas fa-lock lock-icon"></i></span>
+                </div>
+                <div class="field-item">
+                    <span class="field-label">Transportation Method Code</span>
+                    <span class="field-value">LT <i class="fas fa-lock lock-icon"></i></span>
+                </div>
+                <!-- These fields appear/update after optimization commit -->
+                <div class="field-item" id="field-total-containers" style="display:none;">
+                    <span class="field-label">Total Containers</span>
+                    <span class="field-value" id="fv-total-containers">— <i class="fas fa-lock lock-icon"></i></span>
+                </div>
+                <div class="field-item" id="field-total-weight" style="display:none;">
+                    <span class="field-label">Total Weight (lbs)</span>
+                    <span class="field-value" id="fv-total-weight">— <i class="fas fa-lock lock-icon"></i></span>
+                </div>
+                <div class="field-item" id="field-total-packs" style="display:none;">
+                    <span class="field-label">Total Packs</span>
+                    <span class="field-value" id="fv-total-packs">— <i class="fas fa-lock lock-icon"></i></span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tabs -->
+        <div class="tab-bar">
+            <div class="tab active" id="tabbtn-orders" onclick="switchTab('orders', this)">Orders</div>
+            <div class="tab" id="tabbtn-pallet-opt" onclick="switchTab('pallet-opt', this)">Pallet Optimization</div>
+            <div class="tab" id="tabbtn-shipments" onclick="switchTab('shipments', this)">Shipments</div>
+            <div class="tab" id="tabbtn-containers" onclick="switchTab('containers', this)">Containers</div>
+            <div class="tab" id="tabbtn-shipped" onclick="switchTab('shipped', this)">Shipped Containers</div>
+        </div>
+
+        <!-- Tab content -->
+        <div class="tab-content">
+
+            <!-- Orders tab -->
+            <div class="tab-pane active" id="tab-orders">
+                <div class="table-toolbar">
+                    <span class="table-toolbar-title">Orders</span>
+                    <select class="view-select"><option>-Default-</option></select>
+                    <button class="btn btn-secondary btn-sm" style="padding:.26rem .45rem;font-size:.72rem;"><i class="fas fa-cog"></i></button>
+                    <button class="btn btn-secondary btn-sm"><i class="fas fa-filter"></i> Filter</button>
+                    <button class="btn btn-secondary btn-sm"><i class="fas fa-sort"></i> Sort</button>
+                    <div class="table-toolbar-right">
+                        <div class="pagination-info">
+                            1 – 6 of 6
+                            <button><i class="fas fa-chevron-left"></i></button>
+                            <button><i class="fas fa-chevron-right"></i></button>
+                        </div>
+                        <button class="btn btn-secondary btn-sm"><i class="fas fa-th"></i> Configure</button>
+                    </div>
+                </div>
+                <div class="data-table-wrap">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Type <span class="col-sub">OrderHeader</span></th>
+                                <th>Number <span class="col-sub">OrderHeader</span></th>
+                                <th>Created Date <span class="col-sub">OrderHeader</span></th>
+                                <th>Other Reference Number <span class="col-sub">OrderHeader</span></th>
+                                <th>Custom Attribute 1 <span class="col-sub">OrderHeader</span></th>
+                                <th>Weight <span class="col-sub">OrderHeader</span></th>
+                                <th>Order Status <span class="col-sub">OrderHeader</span></th>
+                                <th>Order Source <span class="col-sub">OrderHeader</span></th>
+                                <th>Business Unit – Name <span class="col-sub">↳ Company</span></th>
+                                <th>Ship From Name <span class="col-sub">OrderHeader</span></th>
+                                <th>Total Line Count (API) <span class="col-sub">OrderHeader</span></th>
+                                <th>Total Qty Ordered <span class="col-sub">OrderHeader</span></th>
+                            </tr>
+                        </thead>
+                        <tbody id="orders-tbody"></tbody>
+                    </table>
+                </div>
+
+
+            </div>
+
+            <!-- Pallet Optimization tab -->
+            <div class="tab-pane" id="tab-pallet-opt">
+                <div class="empty-tab" id="opt-empty-state">
+                    <i class="fas fa-layer-group"></i>
+                    <p>No results yet — use <strong>Actions → Run Pallet Optimization</strong> to calculate pallet assignments.</p>
+                </div>
+                <div id="opt-results-section" style="display:none;">
+                    <div class="opt-results-header">
+                        <h3><i class="fas fa-check-circle" style="color:#28a060;"></i> Pallet Optimization Results <span style="font-size:.72rem;color:#9090a8;font-weight:400;margin-left:.3rem;" id="opt-results-label"></span></h3>
+                        <div style="display:flex;gap:.35rem;">
+                            <button class="btn btn-secondary btn-sm" onclick="exportCsv()"><i class="fas fa-download"></i> Export CSV</button>
+                            <button class="btn btn-secondary btn-sm" onclick="clearOptResults()"><i class="fas fa-times"></i> Clear</button>
+                        </div>
+                    </div>
+                    <div class="opt-results-body">
+                        <div class="banner banner-estimate">
+                            <i class="fas fa-info-circle"></i>
+                            <div>
+                                <strong>Estimate only — based on simulated soft allocation.</strong>
+                                Inventory availability may change before order release. Results do not generate pick tasks or enable SSCC label printing. The authoritative run happens through OFP at order release.
+                            </div>
+                        </div>
+                        <div class="banner banner-partial" id="partial-banner" style="display:none;">
+                            <i class="fas fa-exclamation-triangle"></i>
+                            <div>
+                                <strong>Partial allocation — not all inventory was available.</strong>
+                                Results reflect only the allocated quantities and may be incomplete.
+                            </div>
+                        </div>
+                        <div class="banner banner-excluded" id="excluded-banner" style="display:none;">
+                            <i class="fas fa-exclamation-circle"></i>
+                            <div>
+                                <strong>Warning — items excluded from pallet builds due to missing pack dimensions:</strong>
+                                <span id="excluded-list"></span>. Update the item master and re-run to include them.
+                            </div>
+                        </div>
+                        <div class="summary-grid" id="summary-cards"></div>
+                        <div class="pack-breakdown" id="pack-breakdown" style="display:none;">
+                            <span class="pack-breakdown-label">Packs by type:</span>
+                            <span id="pack-breakdown-items"></span>
+                        </div>
+                        <div id="order-summary-section" style="display:none;margin-bottom:.85rem;">
+                            <div style="font-size:.62rem;font-weight:700;color:#9090a8;text-transform:uppercase;letter-spacing:.05em;margin-bottom:.3rem;">
+                                <i class="fas fa-list" style="margin-right:.2rem;"></i>Per-Order Summary
+                            </div>
+                            <table class="order-summary-table">
+                                <thead>
+                                    <tr>
+                                        <th>Order</th><th>Customer</th><th>Trading Partner</th>
+                                        <th>Full Pallet Picks</th><th>Pallet Builds</th><th>Total Packs</th><th>Haz Packs</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="order-summary-body"></tbody>
+                            </table>
+                        </div>
+                        <div class="pallets-grid" id="pallets-grid"></div>
+                        <div class="audit-log">
+                            <h4><i class="fas fa-history" style="margin-right:.3rem;"></i> Audit Trail</h4>
+                            <div id="audit-entries"><div style="font-size:.73rem;color:#b0b0c8;">No events yet.</div></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Shipments tab -->
+            <div class="tab-pane" id="tab-shipments">
+                <div class="empty-tab"><i class="fas fa-file-alt"></i><p>No shipments on this trip.</p></div>
+            </div>
+
+            <!-- Containers tab -->
+            <div class="tab-pane" id="tab-containers">
+                <div class="empty-tab" id="containers-empty"><i class="fas fa-pallet"></i><p>No containers yet — containers appear here as pallet picking and building is completed.</p></div>
+                <div id="containers-table-wrap" style="display:none;">
+                    <div class="table-toolbar"><span class="table-toolbar-title">Containers</span></div>
+                    <div class="data-table-wrap">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Container ID</th>
+                                    <th>Container Size</th>
+                                    <th>Config Type</th>
+                                    <th>Trading Partner</th>
+                                    <th>Order</th>
+                                    <th>Stack Ht (in)</th>
+                                    <th>Gross Wt (lbs)</th>
+                                    <th>Cube Util %</th>
+                                </tr>
+                            </thead>
+                            <tbody id="containers-tbody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Shipped containers tab -->
+            <div class="tab-pane" id="tab-shipped">
+                <div class="empty-tab"><i class="fas fa-truck-loading"></i><p>No shipped containers on this trip.</p></div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════
+     PALLET OPTIMIZATION MODAL
+═══════════════════════════════════════════════════════ -->
+<div class="modal-overlay" id="opt-modal">
+    <div class="modal modal-wide">
+        <div class="modal-header">
+            <h2><i class="fas fa-layer-group"></i> Run Pallet Optimization</h2>
+            <button class="modal-close" onclick="closeOptModal()"><i class="fas fa-times"></i></button>
+        </div>
+
+        <!-- Step 1: Confirm -->
+        <div id="modal-step-1" class="modal-body">
+            <p style="margin-bottom:1rem;color:#4a4a5a;font-size:.82rem;">
+                Confirm the details below, then click <strong>Run</strong> to calculate pallet assignments for all orders on this trip.
+                <span id="overwrite-note" style="display:none;color:#c03030;font-weight:600;"> Existing pallet optimization results will be overwritten.</span>
+            </p>
+            <table class="confirm-table">
+                <tr><td>Trip</td><td>20260722163113</td></tr>
+                <tr><td>Facility</td><td>Gold Parts Co — DEMOSAND3PL</td></tr>
+                <tr><td>Orders on Trip</td><td>6 orders (ORD-1977, ORD-1894, ORD-1893, ORD-1892, ORD-1891, ORD-1890)</td></tr>
+                <tr><td>Eligible Orders</td><td id="confirm-eligible">6 orders in New or Released status</td></tr>
+                <tr><td>Pallet Type</td><td>48×40 GMA Standard</td></tr>
+                <tr><td>Max Stack Height</td><td>60" (from top of pallet deck — does not include pallet tare height)</td></tr>
+                <tr><td>Max Pallet Weight</td><td>2,500 lbs gross (incl. tare)</td></tr>
+                <tr><td>Mixed-Item Pallets</td><td>Single-item only (system default)</td></tr>
+                <tr>
+                    <td>Container Allocation Method</td>
+                    <td>
+                        <select id="alloc-priority">
+                            <option value="CONTAINER_DESC_BREAK" selected>Container Descending (Break)</option>
+                            <option value="CONTAINER_DESC_NOBREAK">Container Descending (Don't Break)</option>
+                            <option value="CONTAINER_ASC_BREAK">Container Ascending (Break)</option>
+                            <option value="CONTAINER_ASC_NOBREAK">Container Ascending (Don't Break)</option>
+                        </select>
+                    </td>
+                </tr>
+            </table>
+            <div class="banner banner-excluded" id="modal-missing-dims" style="display:none;">
+                <i class="fas fa-exclamation-circle"></i>
+                <div><strong>Warning — items missing pack dimensions will be excluded from pallet builds:</strong> <span id="modal-missing-dims-text"></span>. Update the item master and re-run to include them.</div>
+            </div>
+        </div>
+
+        <!-- Step 2: Processing -->
+        <div id="modal-step-2" class="spinner-body">
+            <div class="dep-spinner"></div>
+            <p style="color:#4a4a5a;font-size:.85rem;font-weight:600;">Running Pallet Cubing…</p>
+            <p style="color:#b0b0c8;font-size:.75rem;" id="loading-status">Validating items…</p>
+            <button class="btn btn-secondary btn-sm" style="margin-top:.5rem;" onclick="cancelOptimization()">
+                <i class="fas fa-times"></i> Cancel
+            </button>
+        </div>
+
+        <!-- Step 3: Results preview -->
+        <div id="modal-step-3" class="modal-body" style="display:none;">
+            <div class="banner" style="background:#edfaf3;border-left-color:#28a060;color:#1a5a30;margin-bottom:1rem;">
+                <i class="fas fa-check-circle" style="color:#28a060;"></i>
+                <div>
+                    <strong>Pallet Cubing complete.</strong>
+                    Review the summary below. Commit to write results to the trip, or cancel to discard.
+                </div>
+            </div>
+            <div class="summary-grid" id="modal-summary-cards"></div>
+            <div class="banner banner-excluded" id="modal-excluded-banner" style="display:none;">
+                <i class="fas fa-exclamation-circle"></i>
+                <div><strong>Items excluded from pallet builds (missing pack dimensions):</strong> <span id="modal-excluded-msg"></span>.</div>
+            </div>
+            <p style="font-size:.75rem;color:#9090a8;margin-top:.25rem;">Committing will update the trip with total containers, total weight, and total packs. Optimization can be re-run at any time — each new run overwrites the previous estimate.</p>
+        </div>
+
+        <div class="modal-footer">
+            <button class="btn btn-secondary" id="modal-cancel-btn" onclick="closeOptModal()">Cancel</button>
+            <button class="btn btn-primary" id="modal-run-btn" onclick="executeOptimization()"><i class="fas fa-play"></i> Run</button>
+            <button class="btn btn-success" id="modal-commit-btn" style="display:none;" onclick="commitFromModal()"><i class="fas fa-check"></i> Commit to Trip</button>
+        </div>
+    </div>
+</div>
+
+<div class="notification-container" id="notif-container"></div>
+
+<script>
+// ── State ──────────────────────────────────────────────────────────────────
+const state = {
+    result: null,
+    auditLog: [],
+    committed: false
+};
+
+// ── Sample trip orders ─────────────────────────────────────────────────────
+const TRIP_ORDERS = [
+    {
+        id: 'ORD-1977', type: 'Sales Order', createdDate: '2026-07-20 17:02',
+        otherRef: '--', customAttr: 'B2B', weight: 0, status: 'New',
+        source: 'SPS', buName: 'DEMOSAND3PL', shipFrom: 'Gold Parts Co',
+        lineCount: 3, qtyOrdered: 7600,
+        tp: 'ACME',
+        items: [
+            { sku:'SKU-1001', description:'Widget Box A',  tp:'ACME', packLevel:'Case', lengthIn:12, widthIn:10, heightIn:8,  weightLbs:15, quantity:80,  hazardous:false },
+            { sku:'SKU-1002', description:'Widget Box B',  tp:'ACME', packLevel:'Case', lengthIn:14, widthIn:12, heightIn:10, weightLbs:22, quantity:40,  hazardous:false },
+            { sku:'SKU-1005', description:'Promo Pack (dims not on file)', tp:'ACME', packLevel:'Case', lengthIn:0, widthIn:0, heightIn:0, weightLbs:0, quantity:30, hazardous:false },
+        ]
+    },
+    {
+        id: 'ORD-1894', type: 'Sales Order', createdDate: '2026-04-27 09:51',
+        otherRef: '--', customAttr: 'B2B', weight: 0, status: 'New',
+        source: 'Shopify', buName: 'DEMOSAND3PL', shipFrom: 'Gold Parts Co',
+        lineCount: 1, qtyOrdered: 25,
+        tp: 'GLOBAL',
+        items: [
+            { sku:'SKU-2001', description:'Apparel Box S', tp:'GLOBAL', packLevel:'Case', lengthIn:10, widthIn:8,  heightIn:6,  weightLbs:8,  quantity:25, hazardous:false },
+        ]
+    },
+    {
+        id: 'ORD-1893', type: 'Sales Order', createdDate: '2026-04-27 09:51',
+        otherRef: '--', customAttr: 'B2B', weight: 0, status: 'New',
+        source: 'Shopify', buName: 'DEMOSAND3PL', shipFrom: 'Gold Parts Co',
+        lineCount: 1, qtyOrdered: 25,
+        tp: 'GLOBAL',
+        items: [
+            { sku:'SKU-2002', description:'Apparel Box L', tp:'GLOBAL', packLevel:'Case', lengthIn:16, widthIn:14, heightIn:12, weightLbs:18, quantity:25, hazardous:false },
+        ]
+    },
+    {
+        id: 'ORD-1892', type: 'Sales Order', createdDate: '2026-04-27 09:51',
+        otherRef: '--', customAttr: 'B2B', weight: 0, status: 'Released',
+        source: 'Shopify', buName: 'DEMOSAND3PL', shipFrom: 'Gold Parts Co',
+        lineCount: 1, qtyOrdered: 25,
+        tp: 'TECH',
+        items: [
+            { sku:'SKU-3001', description:'Food Pack A', tp:'TECH', packLevel:'Case', lengthIn:12, widthIn:12, heightIn:10, weightLbs:12, quantity:25, hazardous:false },
+        ]
+    },
+    {
+        id: 'ORD-1891', type: 'Sales Order', createdDate: '2026-04-27 09:51',
+        otherRef: '--', customAttr: 'B2B', weight: 0, status: 'New',
+        source: 'Shopify', buName: 'DEMOSAND3PL', shipFrom: 'Gold Parts Co',
+        lineCount: 1, qtyOrdered: 25,
+        tp: 'TECH',
+        items: [
+            { sku:'SKU-HAZ1', description:'Chemical Drum', tp:'TECH', packLevel:'Drum', lengthIn:18, widthIn:18, heightIn:24, weightLbs:55, quantity:25, hazardous:true },
+        ]
+    },
+    {
+        id: 'ORD-1890', type: 'Sales Order', createdDate: '2026-04-27 09:51',
+        otherRef: '--', customAttr: 'B2B', weight: 0, status: 'New',
+        source: 'Shopify', buName: 'DEMOSAND3PL', shipFrom: 'Gold Parts Co',
+        lineCount: 1, qtyOrdered: 25,
+        tp: 'ACME',
+        items: [
+            { sku:'SKU-1003', description:'Widget Box C', tp:'ACME', packLevel:'Case', lengthIn:10, widthIn:10, heightIn:8,  weightLbs:12, quantity:25, hazardous:false },
+        ]
+    },
+];
+
+// ── Render orders table ────────────────────────────────────────────────────
+function renderOrders() {
+    document.getElementById('orders-tbody').innerHTML = TRIP_ORDERS.map(o => {
+        const statusCls = o.status === 'Released' ? 'status-released' : 'status-new';
+        return `<tr>
+            <td><span class="type-badge">${o.type}</span></td>
+            <td><a class="order-link">${o.id}</a></td>
+            <td>${o.createdDate}</td>
+            <td>${o.otherRef}</td>
+            <td>${o.customAttr}</td>
+            <td>${o.weight}</td>
+            <td><span class="status-badge ${statusCls}">${o.status}</span></td>
+            <td>${o.source}</td>
+            <td>${o.buName}</td>
+            <td>${o.shipFrom}</td>
+            <td>${o.lineCount}</td>
+            <td>${o.qtyOrdered.toFixed(1)}</td>
+        </tr>`;
+    }).join('');
+}
+
+// ── Tab switching ──────────────────────────────────────────────────────────
+function switchTab(name, elOrName) {
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+    const btn = typeof elOrName === 'string'
+        ? document.getElementById('tabbtn-' + elOrName)
+        : elOrName;
+    if (btn) btn.classList.add('active');
+    const pane = document.getElementById('tab-' + name);
+    if (pane) pane.classList.add('active');
+}
+
+// ── Actions menu ───────────────────────────────────────────────────────────
+function toggleActionsMenu(e) {
+    e.stopPropagation();
+    document.getElementById('actions-dropdown').classList.toggle('open');
+}
+function closeActionsMenu() { document.getElementById('actions-dropdown').classList.remove('open'); }
+document.addEventListener('click', () => closeActionsMenu());
+
+// ── Modal helpers ──────────────────────────────────────────────────────────
+function showModalStep(step) {
+    document.getElementById('modal-step-1').style.display = step === 1 ? 'block' : 'none';
+    document.getElementById('modal-step-2').classList.toggle('active', step === 2);
+    document.getElementById('modal-step-3').style.display = step === 3 ? 'block' : 'none';
+    document.getElementById('modal-run-btn').style.display    = step === 1 ? 'inline-flex' : 'none';
+    document.getElementById('modal-cancel-btn').style.display = step === 2 ? 'none' : 'inline-flex';
+    document.getElementById('modal-cancel-btn').textContent   = step === 3 ? 'Discard' : 'Cancel';
+    document.getElementById('modal-commit-btn').style.display = step === 3 ? 'inline-flex' : 'none';
+}
+
+function openOptModal() {
+    document.getElementById('overwrite-note').style.display = state.result ? 'inline' : 'none';
+    // Check for missing dims
+    const allItems = TRIP_ORDERS.flatMap(o => o.items);
+    const missing  = allItems.filter(i => !hasDims(i));
+    const missingEl = document.getElementById('modal-missing-dims');
+    if (missing.length > 0) {
+        document.getElementById('modal-missing-dims-text').textContent = missing.map(i => i.sku).join(', ');
+        missingEl.style.display = 'flex';
+    } else { missingEl.style.display = 'none'; }
+    showModalStep(1);
+    document.getElementById('opt-modal').classList.add('open');
+}
+
+function closeOptModal() {
+    document.getElementById('opt-modal').classList.remove('open');
+    showModalStep(1);
+}
+
+// ── Cubing helpers ─────────────────────────────────────────────────────────
+function hasDims(item) { return item.lengthIn > 0 && item.widthIn > 0 && item.heightIn > 0 && item.weightLbs > 0; }
+function isOversized(item) {
+    if (!hasDims(item)) return false;
+    const o1 = Math.floor(48/item.lengthIn)*Math.floor(40/item.widthIn);
+    const o2 = Math.floor(48/item.widthIn)*Math.floor(40/item.lengthIn);
+    return o1 === 0 && o2 === 0;
+}
+
+// ── Pallet Cubing ──────────────────────────────────────────────────────────
+function runPalletCubing() {
+    const PALLET = { l:48, w:40 };
+    const maxHeightIn  = 60;
+    const maxWeightLbs = 2500;
+    const palletTareLbs = 50;
+    const allowMixed   = false;
+
+    const allItems = TRIP_ORDERS.flatMap(o => o.items.map(i => ({...i, orderId: o.id})));
+    const usable   = allItems.filter(i => hasDims(i) && !isOversized(i));
+    const excluded = allItems.filter(i => !hasDims(i)).map(i => i.sku);
+    const oversized = allItems.filter(isOversized).map(i => i.sku);
+
+    // Group: order → TP → items
+    const byOrder = {};
+    usable.forEach(item => {
+        const oid = item.orderId;
+        if (!byOrder[oid]) byOrder[oid] = {};
+        const tp = item.tp || '_default';
+        if (!byOrder[oid][tp]) byOrder[oid][tp] = [];
+        byOrder[oid][tp].push(item);
+    });
+
+    let pidx = 1; const builds = [];
+
+    Object.entries(byOrder).forEach(([orderId, byTp]) => {
+        Object.entries(byTp).forEach(([tp, tpItems]) => {
+            const infoList = tpItems.map(item => {
+                const o1 = Math.floor(PALLET.l/item.lengthIn)*Math.floor(PALLET.w/item.widthIn);
+                const o2 = Math.floor(PALLET.l/item.widthIn)*Math.floor(PALLET.w/item.lengthIn);
+                const ppl = Math.max(o1, o2);
+                return { item, ppl, layerH:item.heightIn, layerW:ppl*item.weightLbs, layers:Math.ceil(item.quantity/ppl) };
+            }).sort((a,b) => b.layerW - a.layerW);
+
+            const buildQueue = info => Array.from({length:info.layers}, (_,l) => {
+                const isLast = l === info.layers-1;
+                const qty = isLast ? (info.item.quantity - l*info.ppl) : info.ppl;
+                return { sku:info.item.sku, desc:info.item.description, qty, ppl:info.ppl, layerH:info.layerH, layerW:info.item.weightLbs*qty, hazardous:info.item.hazardous };
+            });
+
+            const stackLayers = queue => {
+                let cur = null;
+                const close = () => { if (cur?.layers.length) builds.push(finalizePallet(cur, PALLET, palletTareLbs, pidx++, orderId)); cur = null; };
+                queue.forEach(layer => {
+                    if (!cur) cur = {layers:[],heightIn:0,productW:0,tp,orderId};
+                    if (cur.heightIn+layer.layerH > maxHeightIn || cur.productW+layer.layerW+palletTareLbs > maxWeightLbs) close();
+                    if (!cur) cur = {layers:[],heightIn:0,productW:0,tp,orderId};
+                    cur.layers.push(layer); cur.heightIn += layer.layerH; cur.productW += layer.layerW;
+                });
+                close();
+            };
+
+            if (allowMixed) { stackLayers(infoList.flatMap(buildQueue)); }
+            else { infoList.forEach(info => stackLayers(buildQueue(info))); }
+        });
+    });
+
+    // Simulate full pallet picks
+    const simulatedFullPicks = Math.max(0, Math.floor(usable.reduce((s,i)=>s+i.quantity,0) / 120));
+    const fullPicks = Array.from({length:simulatedFullPicks}, (_,e) => ({
+        palletId:`FPL-${String(e+1).padStart(3,'0')}`, lineItems:[{sku:'(full pallet pick)',desc:'Container allocation',qty:1}],
+        grossW:0, stackH:0, cubeUtil:100, configType:'Full Pick', tp:'', orderId:TRIP_ORDERS[e % TRIP_ORDERS.length].id, isFullPick:true, warnings:[]
+    }));
+
+    const totalCases  = usable.reduce((s,i)=>s+i.quantity,0);
+    const hazCases    = usable.filter(i=>i.hazardous).reduce((s,i)=>s+i.quantity,0);
+    const packCounts  = {};
+    usable.forEach(i => { const k = i.packLevel||'Pack'; packCounts[k]=(packCounts[k]||0)+i.quantity; });
+
+    const totalGrossWeight = builds.reduce((s,b)=>s+b.grossW,0);
+
+    return {
+        orderIds: TRIP_ORDERS.map(o=>o.id),
+        existingFullPallets: simulatedFullPicks,
+        palletBuilds: builds.length,
+        totalPallets: builds.length + simulatedFullPicks,
+        totalCases, hazCases, nonHazCases: totalCases-hazCases,
+        excludedItems: excluded, oversizedItems: oversized,
+        packCounts, builds: [...fullPicks, ...builds],
+        totalGrossWeight
+    };
+}
+
+function finalizePallet(p, PALLET, tareLbs, idx, orderId) {
+    const grossW = p.productW + tareLbs;
+    const skus   = [...new Set(p.layers.map(l=>l.sku))];
+    const type   = skus.length === 1 ? 'Single-Item' : 'Mixed';
+    const lineMap = {};
+    p.layers.forEach(l => {
+        if (!lineMap[l.sku]) lineMap[l.sku]={sku:l.sku,desc:l.desc,qty:0,hazardous:l.hazardous};
+        lineMap[l.sku].qty += l.qty;
+    });
+    const palletVol = PALLET.l*PALLET.w*60;
+    const allItems  = TRIP_ORDERS.flatMap(o=>o.items);
+    const itemVol   = p.layers.reduce((s,l)=>{ const it=allItems.find(i=>i.sku===l.sku); return s+(it?it.lengthIn*it.widthIn*it.heightIn*l.qty:0); },0);
+    return {
+        palletId: `PLT-${String(idx).padStart(3,'0')}`,
+        layers: p.layers,
+        lineItems: Object.values(lineMap),
+        grossW, stackH: p.heightIn,
+        cubeUtil: palletVol > 0 ? Math.min((itemVol/palletVol)*100, 100) : 0,
+        configType: type, tp: p.tp, orderId, isFullPick: false,
+        warnings: grossW > 2400 ? ['Near weight limit'] : []
+    };
+}
+
+// ── Optimization flow ──────────────────────────────────────────────────────
+let _timer = null, _interval = null, _cancelled = false;
+
+function executeOptimization() {
+    _cancelled = false;
+    showModalStep(2);
+    const statuses = ['Validating items…','Running container allocation pass…','Calculating layer capacities…','Stacking layers onto pallets…','Finalizing results…'];
+    let si = 0;
+    const statusEl = document.getElementById('loading-status');
+    _interval = setInterval(() => { if (si < statuses.length) statusEl.textContent = statuses[si++]; }, 430);
+    _timer = setTimeout(() => {
+        clearInterval(_interval);
+        if (_cancelled) return;
+        state.result = runPalletCubing();
+        renderModalSummary();
+        showModalStep(3);
+    }, 2200);
+}
+
+function cancelOptimization() {
+    _cancelled = true;
+    clearTimeout(_timer); clearInterval(_interval);
+    closeOptModal();
+}
+
+function commitFromModal() {
+    closeOptModal();
+    commitResults();
+}
+
+// ── Summary cards HTML ─────────────────────────────────────────────────────
+function summaryCardsHtml(cards) {
+    return cards.map(c=>`<div class="summary-card"><div class="s-val">${c.val}</div><div class="s-lbl">${c.lbl}</div></div>`).join('');
+}
+
+function renderModalSummary() {
+    const r = state.result;
+    document.getElementById('modal-summary-cards').innerHTML = summaryCardsHtml([
+        {val:r.totalPallets,         lbl:'Total Pallets'},
+        {val:r.existingFullPallets,  lbl:'Full Pallet Picks'},
+        {val:r.palletBuilds,         lbl:'Builds Required'},
+        {val:r.totalCases,           lbl:'Total Packs'},
+        {val:r.hazCases,             lbl:'Hazardous Packs'},
+    ]);
+    const excl = document.getElementById('modal-excluded-banner');
+    if (r.excludedItems.length > 0) {
+        document.getElementById('modal-excluded-msg').textContent = r.excludedItems.join(', ');
+        excl.style.display = 'flex';
+    } else { excl.style.display = 'none'; }
+}
+
+// ── Commit ─────────────────────────────────────────────────────────────────
+function commitResults() {
+    const r = state.result; if (!r) return;
+    state.committed = true;
+
+    // Update trip overview fields
+    ['field-total-containers','field-total-weight','field-total-packs'].forEach(id => {
+        document.getElementById(id).style.display = '';
+    });
+    document.getElementById('fv-total-containers').innerHTML = `${r.totalPallets} <i class="fas fa-lock lock-icon"></i>`;
+    document.getElementById('fv-total-weight').innerHTML     = `${r.totalGrossWeight.toLocaleString(undefined,{maximumFractionDigits:0})} lbs <i class="fas fa-lock lock-icon"></i>`;
+    document.getElementById('fv-total-packs').innerHTML      = `${r.totalCases} <i class="fas fa-lock lock-icon"></i>`;
+
+    // Switch to Pallet Optimization tab and show results
+    switchTab('pallet-opt', 'pallet-opt');
+    document.getElementById('opt-empty-state').style.display = 'none';
+    document.getElementById('opt-results-section').style.display = 'block';
+    document.getElementById('opt-results-label').textContent = `— ${r.totalPallets} pallets (${r.palletBuilds} builds + ${r.existingFullPallets} full picks)`;
+
+    // Summary cards
+    document.getElementById('summary-cards').innerHTML = summaryCardsHtml([
+        {val:r.totalPallets,        lbl:'Total Pallets'},
+        {val:r.existingFullPallets, lbl:'Full Pallet Picks'},
+        {val:r.palletBuilds,        lbl:'Builds Required'},
+        {val:r.totalCases,          lbl:'Total Packs'},
+        {val:r.hazCases,            lbl:'Hazardous Packs'},
+        {val:r.nonHazCases,         lbl:'Non-Haz Packs'},
+    ]);
+
+    // Pack breakdown
+    const packEl = document.getElementById('pack-breakdown');
+    if (r.packCounts && Object.keys(r.packCounts).length > 0) {
+        document.getElementById('pack-breakdown-items').innerHTML =
+            Object.entries(r.packCounts).map(([k,v])=>`<span class="pack-breakdown-item">${k}: ${v}</span>`).join(' ');
+        packEl.style.display = 'flex';
+    }
+
+    // Excluded warning
+    const exclBanner = document.getElementById('excluded-banner');
+    if (r.excludedItems.length > 0) {
+        document.getElementById('excluded-list').textContent = ' ' + r.excludedItems.join(', ');
+        exclBanner.style.display = 'flex';
+    } else { exclBanner.style.display = 'none'; }
+
+    // Per-order summary
+    const perOrder = {};
+    r.orderIds.forEach(oid => {
+        const o = TRIP_ORDERS.find(x => x.id === oid);
+        perOrder[oid] = {orderId:oid, customer:o?.buName||'', tp:o?.tp||'', fullPicks:0, builds:0, totalPacks:0, hazPacks:0};
+    });
+    r.builds.filter(b=>b.isFullPick).forEach(b => { if(perOrder[b.orderId]) perOrder[b.orderId].fullPicks++; });
+    r.builds.filter(b=>!b.isFullPick).forEach(b => { if(perOrder[b.orderId]) perOrder[b.orderId].builds++; });
+    const allItems = TRIP_ORDERS.flatMap(o=>o.items.map(i=>({...i,orderId:o.id})));
+    allItems.filter(hasDims).forEach(i => {
+        if (perOrder[i.orderId]) {
+            perOrder[i.orderId].totalPacks += i.quantity;
+            if (i.hazardous) perOrder[i.orderId].hazPacks += i.quantity;
+        }
+    });
+    document.getElementById('order-summary-body').innerHTML = Object.values(perOrder).map(p=>`
+        <tr>
+            <td style="font-weight:700;color:#f08020;">${p.orderId}</td>
+            <td>${p.customer}</td>
+            <td>${p.tp}</td>
+            <td>${p.fullPicks}</td>
+            <td>${p.builds}</td>
+            <td>${p.totalPacks}</td>
+            <td style="color:${p.hazPacks>0?'#c02020':'#2d2d3a'};font-weight:${p.hazPacks>0?700:400};">${p.hazPacks}</td>
+        </tr>`).join('');
+    document.getElementById('order-summary-section').style.display = 'block';
+
+    // Pallet cards
+    document.getElementById('pallets-grid').innerHTML = r.builds.map(renderPalletCard).join('');
+
+    // Audit
+    addAuditEntry(`Pallet Optimization committed: ${r.palletBuilds} builds + ${r.existingFullPallets} full picks = ${r.totalPallets} total pallets. Total weight: ${r.totalGrossWeight.toFixed(0)} lbs. Total packs: ${r.totalCases}.`);
+
+    notify(`Pallet Optimization committed — <strong>${r.totalPallets}</strong> pallets written to trip.`, 'success');
+
+    document.getElementById('tab-pallet-opt').scrollIntoView({behavior:'smooth', block:'start'});
+}
+
+function clearOptResults() {
+    state.result = null; state.committed = false;
+    document.getElementById('opt-results-section').style.display = 'none';
+    document.getElementById('opt-empty-state').style.display = '';
+    ['field-total-containers','field-total-weight','field-total-packs'].forEach(id => {
+        document.getElementById(id).style.display = 'none';
+    });
+    document.getElementById('containers-empty').style.display = '';
+    document.getElementById('containers-table-wrap').style.display = 'none';
+    addAuditEntry('Pallet Optimization results cleared.');
+}
+
+// ── Containers tab ─────────────────────────────────────────────────────────
+function populateContainersTab(r) {
+    document.getElementById('containers-empty').style.display = 'none';
+    document.getElementById('containers-table-wrap').style.display = '';
+    document.getElementById('containers-tbody').innerHTML = r.builds.map(b => {
+        if (b.isFullPick) return `<tr>
+            <td style="font-weight:700;color:#28a060;">${b.palletId}</td>
+            <td>48×40 GMA</td>
+            <td>Full Pick</td>
+            <td>—</td><td>—</td><td>—</td><td>—</td><td>100%</td>
+        </tr>`;
+        const cfgClass = b.configType==='Mixed'?'config-mixed':'config-single';
+        return `<tr>
+            <td style="font-weight:700;color:#f08020;">${b.palletId}</td>
+            <td>48×40 GMA</td>
+            <td><span class="config-type-badge ${cfgClass}">${b.configType}</span></td>
+            <td>${b.tp||'—'}</td>
+            <td>${b.orderId||'—'}</td>
+            <td>${b.stackH.toFixed(0)}"</td>
+            <td>${b.grossW.toFixed(0)}</td>
+            <td>${b.cubeUtil.toFixed(0)}%</td>
+        </tr>`;
+    }).join('');
+}
+
+// ── Pallet card render ─────────────────────────────────────────────────────
+function renderPalletCard(b) {
+    if (b.isFullPick) return `<div class="pallet-card full-pick">
+        <div class="pallet-card-header"><span class="pallet-id">${b.palletId}</span><span class="pallet-type-badge">48×40 GMA</span></div>
+        <div style="font-size:.73rem;color:#1a6a38;"><i class="fas fa-check-circle" style="margin-right:.25rem;"></i>Full pallet pick — no build required</div>
+    </div>`;
+    const cfgClass = b.configType==='Mixed'?'config-mixed':'config-single';
+    const tpNote   = b.tp&&b.tp!=='_default'?`<span class="tp-note">${b.tp}</span>`:'';
+    const oNote    = b.orderId&&b.orderId!=='_default'?`<span class="tp-note" style="color:#f08020;font-weight:600;">${b.orderId}</span>`:'';
+    const SHOW = 5;
+    const reversed = [...b.layers].reverse();
+    const total = reversed.length;
+    const rows = reversed.map((l,i) => {
+        const layerNum = total-i;
+        const isBottom = i === total-1;
+        return `<div class="layer-row ${isBottom?'bottom-layer':''}">
+            <span class="layer-num">L${layerNum}</span>
+            <span class="layer-sku">${l.sku}${l.hazardous?'<span class="haz-badge">HAZ</span>':''}</span>
+            <span class="layer-qty">${l.qty}${l.qty<l.ppl?' (partial)':''} × ${l.layerH}"h</span>
+        </div>`;
+    });
+    const layerHtml = rows.length<=SHOW ? rows.join('')
+        : rows.slice(0,SHOW).join('') + `<span class="layers-more" onclick="this.nextElementSibling.style.display='block';this.style.display='none';">+ ${rows.length-SHOW} more layers…</span><div style="display:none;">${rows.slice(SHOW).join('')}</div>`;
+    return `<div class="pallet-card">
+        <div class="pallet-card-header">
+            <div><span class="pallet-id">${b.palletId}</span><span class="config-type-badge ${cfgClass}">${b.configType}</span>${tpNote}${oNote}</div>
+            <span class="pallet-type-badge">48×40 GMA</span>
+        </div>
+        <div class="pallet-metrics">
+            <div class="pallet-metric"><div class="m-val">${b.stackH.toFixed(0)}"</div><div class="m-lbl">Stack Ht</div></div>
+            <div class="pallet-metric"><div class="m-val">${b.grossW.toFixed(0)}</div><div class="m-lbl">Gross Wt</div></div>
+            <div class="pallet-metric"><div class="m-val">${b.cubeUtil.toFixed(0)}%</div><div class="m-lbl">Cube Util</div></div>
+        </div>
+        <div class="util-bar"><div class="util-fill" style="width:${Math.min(b.cubeUtil,100).toFixed(0)}%"></div></div>
+        <div class="layers-label"><i class="fas fa-layer-group" style="margin-right:.2rem;"></i>Layer stack (top → bottom)</div>
+        ${layerHtml}
+        ${b.warnings.length?`<div class="pallet-warning">${b.warnings.join('; ')}</div>`:''}
+    </div>`;
+}
+
+// ── CSV Export ─────────────────────────────────────────────────────────────
+function exportCsv() {
+    if (!state.result) return;
+    const rows = [['Pallet ID','Config Type','TP','Order','SKU','Description','Quantity','Gross Weight (lbs)','Stack Height (in)','Cube Util %']];
+    state.result.builds.forEach(b=>(b.lineItems||[]).forEach(li=>rows.push([b.palletId,b.configType,b.tp||'',b.orderId||'',li.sku,li.desc,li.qty,b.grossW?.toFixed(1)||'',b.stackH?.toFixed(1)||'',b.cubeUtil?.toFixed(1)||''])));
+    const csv = rows.map(r=>r.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
+    const blob = new Blob([csv],{type:'text/csv'});
+    const url  = URL.createObjectURL(blob);
+    const a    = Object.assign(document.createElement('a'),{href:url,download:'pallet-opt-trip-20260722163113.csv'});
+    document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
+    addAuditEntry('CSV exported.');
+}
+
+// ── Audit ──────────────────────────────────────────────────────────────────
+function addAuditEntry(text) {
+    const now = new Date().toLocaleTimeString();
+    state.auditLog.unshift({time:now, text});
+    document.getElementById('audit-entries').innerHTML = state.auditLog.map(e=>
+        `<div class="audit-entry"><span class="audit-time">${e.time}</span><span>${e.text}</span></div>`
+    ).join('');
+}
+
+// ── Notification ───────────────────────────────────────────────────────────
+function notify(message, type='info') {
+    const n = document.createElement('div');
+    n.className = `notification notification-${type}`;
+    n.innerHTML = `<i class="fas fa-check-circle"></i><span style="flex:1;">${message}</span><button onclick="this.parentElement.remove()"><i class="fas fa-times"></i></button>`;
+    document.getElementById('notif-container').appendChild(n);
+    setTimeout(()=>{ if(n.parentElement) n.remove(); }, 7000);
+}
+
+// ── Init ───────────────────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', renderOrders);
+</script>
+</body>
+</html>
