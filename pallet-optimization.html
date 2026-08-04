@@ -723,6 +723,10 @@
                     </div>
                 </div>
                 <div class="summary-grid" id="modal-summary"></div>
+                <div id="modal-partial-alloc" class="banner banner-partial" style="display:none;">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <div><strong>Warning — inventory not fully available for: <span id="modal-partial-alloc-orders"></span>.</strong> Pallet estimates are based on available inventory only and may be incomplete. These orders may backorder. You can still commit to the trip.</div>
+                </div>
                 <div id="modal-excluded" class="banner banner-excluded" style="display:none;">
                     <i class="fas fa-exclamation-circle"></i>
                     <div><strong>Warning — items excluded from pallet builds (missing pack dimensions):</strong> <span id="modal-excluded-msg"></span>. These items are not included in any layer assignment. Update the item master and re-run to include them.</div>
@@ -1198,12 +1202,14 @@
         const hazCases=usable.filter(i=>i.hazardous).reduce((s,i)=>s+i.quantity,0);
         const packCounts={};
         usable.forEach(i=>{ const key=i.packLevel||'Pack'; packCounts[key]=(packCounts[key]||0)+i.quantity; });
+        // Simulate partial inventory availability: first selected order is partially available
+        const partialAllocOrders = emulatorMode ? [] : selOrders.slice(0,1).map(o=>o.id);
         return {
             orderIds:[...state.selectedOrderIds], orderSummary:selOrders.map(o=>o.id).join(', '), mode:state.mode,
             existingFullPallets:simulatedFullPicks, palletBuilds:builds.length,
             totalPallets:builds.length+simulatedFullPicks,
             totalCases, hazCases, nonHazCases:totalCases-hazCases, excludedItems:excluded, oversizedItems:oversized,
-            packCounts, builds:[...fullPicks,...builds]
+            packCounts, builds:[...fullPicks,...builds], partialAllocOrders
         };
     }
 
@@ -1232,6 +1238,9 @@
         document.getElementById('modal-summary').innerHTML = summaryCardsHtml([
             {val:r.totalPallets,lbl:'Total Pallets'}, {val:r.existingFullPallets,lbl:'Full Pallet Picks'}, {val:r.palletBuilds,lbl:'Builds Required'}
         ]);
+        const partial=document.getElementById('modal-partial-alloc');
+        if(r.partialAllocOrders&&r.partialAllocOrders.length>0){ document.getElementById('modal-partial-alloc-orders').textContent=r.partialAllocOrders.join(', '); partial.style.display='flex'; }
+        else { partial.style.display='none'; }
         const excl=document.getElementById('modal-excluded');
         if(r.excludedItems.length>0){ document.getElementById('modal-excluded-msg').textContent=r.excludedItems.join(', '); excl.style.display='flex'; }
         else { excl.style.display='none'; }
