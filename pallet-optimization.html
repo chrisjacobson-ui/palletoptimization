@@ -552,8 +552,8 @@
                     <div class="banner banner-partial" id="partial-banner" style="display:none;">
                         <i class="fas fa-exclamation-triangle"></i>
                         <div>
-                            <strong>Partial allocation — not all inventory was available.</strong>
-                            Results reflect only the allocated quantities. You can still commit; results will be updated at order release.
+                            <strong>Warning — inventory not fully available for: <span id="partial-banner-orders"></span>.</strong>
+                            Pallet estimates are based on available inventory only and may be incomplete. These orders may backorder. Results will be updated at order release.
                         </div>
                     </div>
 
@@ -701,6 +701,9 @@
                     <i class="fas fa-expand-arrows-alt"></i>
                     <div><strong>Warning — items exceed the pallet footprint (48"×40") and will be excluded from pallet builds:</strong><span id="oversized-dims-text"></span>. These items cannot fit on a standard pallet in any orientation. Review the pack dimensions or arrange special handling.</div>
                 </div>
+                <label style="display:flex;align-items:center;gap:.4rem;font-size:.72rem;color:#b0b0c8;margin-top:.75rem;cursor:pointer;user-select:none;">
+                    <input type="checkbox" id="sim-error-chk"> Simulate error (prototype testing only)
+                </label>
             </div>
 
             <!-- Step 2: Processing -->
@@ -711,6 +714,16 @@
                 <button class="btn btn-secondary btn-sm" style="margin-top:.5rem;" onclick="cancelOptimization()">
                     <i class="fas fa-times"></i> Cancel
                 </button>
+            </div>
+
+            <!-- Step 4: Error -->
+            <div id="modal-step-4" class="modal-body" style="display:none;">
+                <div style="display:flex;flex-direction:column;align-items:center;text-align:center;padding:1rem 0 .5rem;">
+                    <i class="fas fa-exclamation-circle" style="font-size:2rem;color:#c03030;margin-bottom:.75rem;"></i>
+                    <p style="font-size:.9rem;font-weight:700;color:#1e1e2a;margin-bottom:.4rem;">Pallet Optimization could not be completed</p>
+                    <p style="font-size:.82rem;color:#5a5a72;">An unexpected error occurred while running Pallet Cubing. No changes have been made.</p>
+                    <p style="font-size:.8rem;color:#9090a8;margin-top:.5rem;">Please try again. If the problem persists, contact your system administrator.</p>
+                </div>
             </div>
 
             <!-- Step 3: Preview -->
@@ -741,6 +754,9 @@
                 <button class="btn btn-secondary" id="modal-cancel-btn" onclick="closeRunModal()">Cancel</button>
                 <button class="btn btn-primary" id="modal-run-btn" onclick="executeOptimization()">
                     <i class="fas fa-play"></i> Run
+                </button>
+                <button class="btn btn-primary" id="modal-try-again-btn" style="display:none;" onclick="showModalStep(1)">
+                    <i class="fas fa-redo"></i> Try Again
                 </button>
                 <button class="btn btn-success" id="modal-commit-btn" style="display:none;" onclick="commitFromModal()">
                     <i class="fas fa-check"></i> Commit &amp; Create Trip
@@ -1103,11 +1119,18 @@
         document.getElementById('modal-step-1').style.display = step===1 ? 'block' : 'none';
         document.getElementById('modal-step-2').classList.toggle('active', step===2);
         document.getElementById('modal-step-3').style.display = step===3 ? 'block' : 'none';
-        document.getElementById('modal-run-btn').style.display    = step===1 ? 'inline-flex' : 'none';
-        document.getElementById('modal-cancel-btn').style.display = step===2 ? 'none' : 'inline-flex';
-        document.getElementById('modal-cancel-btn').textContent   = step===3 ? 'Close' : 'Cancel';
-        document.getElementById('modal-commit-btn').style.display = (step===3 && state.mode!=='EMULATOR') ? 'inline-flex' : 'none';
-        document.getElementById('modal-view-btn').style.display   = step===3 ? 'inline-flex' : 'none';
+        document.getElementById('modal-step-4').style.display = step===4 ? 'block' : 'none';
+        document.getElementById('modal-run-btn').style.display     = step===1 ? 'inline-flex' : 'none';
+        document.getElementById('modal-try-again-btn').style.display = step===4 ? 'inline-flex' : 'none';
+        document.getElementById('modal-cancel-btn').style.display  = step===2 ? 'none' : 'inline-flex';
+        document.getElementById('modal-cancel-btn').textContent    = step===3 ? 'Close' : 'Cancel';
+        document.getElementById('modal-commit-btn').style.display  = (step===3 && state.mode!=='EMULATOR') ? 'inline-flex' : 'none';
+        document.getElementById('modal-view-btn').style.display    = step===3 ? 'inline-flex' : 'none';
+    }
+
+    function triggerOptimizationError() {
+        clearInterval(_optimizationInterval);
+        showModalStep(4);
     }
 
     let _optimizationTimer = null;
@@ -1124,6 +1147,7 @@
         _optimizationTimer = setTimeout(() => {
             clearInterval(_optimizationInterval);
             if (_optimizationCancelled) return;
+            if (document.getElementById('sim-error-chk').checked) { triggerOptimizationError(); return; }
             state.result = runPalletCubing(state.items, {
                 palletTareLbs: 50, emulatorMode: state.mode==='EMULATOR'
             });
@@ -1255,6 +1279,9 @@
         document.getElementById('results-label').textContent = r.mode==='EMULATOR' ? '— Emulator' : `— ${r.orderSummary}`;
         document.getElementById('commit-btn').style.display   = r.mode==='EMULATOR' ? 'none' : 'inline-flex';
         document.getElementById('estimate-banner').style.display = r.mode==='EMULATOR' ? 'none' : 'flex';
+        const partialWarn=document.getElementById('partial-banner');
+        if(r.mode!=='EMULATOR'&&r.partialAllocOrders&&r.partialAllocOrders.length>0){ document.getElementById('partial-banner-orders').textContent=r.partialAllocOrders.join(', '); partialWarn.style.display='flex'; }
+        else { partialWarn.style.display='none'; }
         const exclWarn=document.getElementById('excluded-warning');
         if(r.excludedItems.length>0){ document.getElementById('excluded-list').textContent=' '+r.excludedItems.join(', '); exclWarn.style.display='flex'; }
         else { exclWarn.style.display='none'; }
